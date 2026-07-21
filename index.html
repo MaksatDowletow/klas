@@ -1,0 +1,436 @@
+<!doctype html>
+<html lang="tk">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="Klasdaşlar - 2000-nji ýylda Kerki etrabynyň 27-nji mekdebini gutaran klasdaşlar üçin howpsuz aragatnaşyk meýdançasy.">
+    <title>Klasdaşlar | Howpsuz klasdaş aragatnaşygy</title>
+    <link rel="stylesheet" href="styles.css">
+  </head>
+  <body>
+    <a class="skip-link" href="#main">Mazmuna geç</a>
+    <header class="topbar">
+      <a class="brand" href="#home" aria-label="Klasdaşlar baş sahypa">
+        <span class="brand-mark">K</span>
+        <span>
+          <strong>Klasdaşlar</strong>
+          <small>27-nji mekdep, 2000</small>
+        </span>
+      </a>
+      <button class="icon-button menu-toggle" type="button" aria-label="Menýuny aç" aria-expanded="false">☰</button>
+      <nav class="nav" aria-label="Esasy nawigasiýa">
+        <a href="#how">Işleýşi</a>
+        <a href="#safety">Howpsuzlyk</a>
+        <a href="#faq">FAQ</a>
+        <a href="#profiles">Anketalar</a>
+        <a href="#gallery">Galereýa</a>
+        <select id="languageSelect" aria-label="Dil saýla">
+          <option value="tk">TK</option>
+          <option value="ru">RU</option>
+          <option value="en">EN</option>
+        </select>
+        <a class="ghost-button" href="#login">Giriş</a>
+        <a class="primary-button" href="#quiz">Başla</a>
+      </nav>
+    </header>
+
+    <main id="main">
+      <section id="home" class="view active">
+        <div class="hero">
+          <div class="hero-copy">
+            <p class="eyebrow">Ýapyk we moderasiýaly klasdaş jemgyýeti</p>
+            <h1>Klasdaşlar</h1>
+            <p class="lead">Kerki etrabynyň 27-nji mekdebini 2000-nji ýylda gutaran klasdaşlar üçin tanyşmak, habarlaşmak we maglumat alyşmak üçin howpsuz web meýdança.</p>
+            <div class="hero-actions">
+              <a class="primary-button large" href="#quiz">Anketadan başla</a>
+              <a class="ghost-button large" href="#safety">Howpsuzlyk düzgünleri</a>
+            </div>
+            <ul class="trust-list" aria-label="Esasy artykmaçlyklar">
+              <li>18+ jemgyýet</li>
+              <li>Şikaýat we bloklama</li>
+              <li>Gizlinlik sazlamalary</li>
+            </ul>
+          </div>
+          <div class="hero-visual" aria-label="Sahypanyň demo interfeýsi">
+            <div class="phone-shell">
+              <div class="mini-toolbar">
+                <span></span><span></span><span></span>
+              </div>
+              <div class="profile-preview">
+                <div class="avatar avatar-a">M</div>
+                <div>
+                  <strong>Mähriban</strong>
+                  <p>Türkmenabat · kitap, syýahat</p>
+                </div>
+              </div>
+              <div class="chat-bubble incoming">Salam, klas duşuşygy barada täzelik barmy?</div>
+              <div class="chat-bubble outgoing">Bar, topar habarynda paýlaşaryn.</div>
+              <div class="filter-row">
+                <span>Kerki</span>
+                <span>Soňky işjeň</span>
+              </div>
+            </div>
+            <div class="floating-card">
+              <strong>Moderasiýa</strong>
+              <span>3 täze şikaýat barlanýar</span>
+            </div>
+          </div>
+        </div>
+
+        <section class="quiz-start panel">
+          <div>
+            <p class="eyebrow">3 ädimli başlangyç anketa</p>
+            <h2>Özüňe laýyk aragatnaşyk sazlamasyny saýla</h2>
+            <p>Şahsy maglumat talap edilmezden, ilki diňe umumy islegler saýlanýar. Hasaba alyş diňe netijeden soň teklip edilýär.</p>
+          </div>
+          <a class="primary-button" href="#quiz">Anketany başlat</a>
+        </section>
+
+        <section class="section-grid" aria-labelledby="benefits-title">
+          <div class="section-heading">
+            <p class="eyebrow">MVP mümkinçilikleri</p>
+            <h2 id="benefits-title">Klasdaşlar üçin zerur funksiýalar</h2>
+          </div>
+          <div class="cards six">
+            <article class="card"><span class="card-icon">↯</span><h3>Çalt başlangyç</h3><p>Gysga anketa, soňra hasaba alyş we profil döretmek.</p></article>
+            <article class="card"><span class="card-icon">◎</span><h3>Akylly süzgüç</h3><p>Şäher, gyzyklanma we işjeňlik boýunça katalog.</p></article>
+            <article class="card"><span class="card-icon">✉</span><h3>Howpsuz chat</h3><p>Şikaýat, bloklama we töwekgelçilikli habar bellikleri.</p></article>
+            <article class="card"><span class="card-icon">✓</span><h3>Profil barlagy</h3><p>Suratlar we profil maglumatlary moderasiýa nobatyna düşýär.</p></article>
+            <article class="card"><span class="card-icon">⚑</span><h3>Şikaýatlar</h3><p>Ulanyjy ýa-da habar barada sebäpli ýüzlenme iberilýär.</p></article>
+            <article class="card"><span class="card-icon">◉</span><h3>Gizlinlik</h3><p>Online statusy, habar rugsady we görünmek derejesi dolandyrylýar.</p></article>
+          </div>
+        </section>
+
+        <section id="how" class="wide-band">
+          <div class="section-heading">
+            <p class="eyebrow">Işleýşi</p>
+            <h2>Landing → anketa → hasap → profil → katalog → chat</h2>
+          </div>
+          <div class="timeline">
+            <div><span>1</span><strong>Anketa</strong><p>Jyns we kim bilen habarlaşmak isleýändigiň saýlanýar.</p></div>
+            <div><span>2</span><strong>Hasaba alyş</strong><p>Email, parol we hukuk razylyklary bilen hasap açylýar.</p></div>
+            <div><span>3</span><strong>Profil</strong><p>Adyň, şäheriň, gyzyklanmalaryň we suratlaryň girizilýär.</p></div>
+            <div><span>4</span><strong>Aragatnaşyk</strong><p>Katalogdan klasdaş saýlap, howpsuz chatda ýazylýar.</p></div>
+          </div>
+        </section>
+
+        <section id="safety" class="safety-layout">
+          <div>
+            <p class="eyebrow">Howpsuzlyk</p>
+            <h2>Açyk düzgünler we gözegçilik</h2>
+            <p>Platforma klasdaşlaryň rahat aragatnaşygy üçin niýetlenýär. Ýalan profil, spam, kemsitme we rugsatsyz surat paýlaşmak gadagan.</p>
+          </div>
+          <div class="safety-list">
+            <article><h3>Şikaýat ibermek</h3><p>Her profilde we habarda şikaýat düwmesi bar.</p></article>
+            <article><h3>Bloklamak</h3><p>Islendik ulanyjy bilen aragatnaşygy derrew ýapyp bolýar.</p></article>
+            <article><h3>Maglumatlary aýyrmak</h3><p>Hasap we suratlar ulanyjynyň haýyşy boýunça pozulýar.</p></article>
+          </div>
+        </section>
+
+        <section class="interface-demo" aria-labelledby="demo-title">
+          <div class="section-heading">
+            <p class="eyebrow">Interfeýs nusgalary</p>
+            <h2 id="demo-title">Katalog, chat we sazlamalar bir ýerde</h2>
+          </div>
+          <div class="demo-grid">
+            <div class="mock-panel" id="mockProfiles"></div>
+            <div class="mock-panel chat-mock">
+              <strong>Chat</strong>
+              <p class="chat-bubble incoming">Duşuşyk senesini tassykladyňyzmy?</p>
+              <p class="chat-bubble outgoing">Hawa, habary umumy toparda goýdum.</p>
+              <button class="danger-button small" type="button">Şikaýat</button>
+            </div>
+            <div class="mock-panel">
+              <strong>Gizlinlik</strong>
+              <label class="toggle-line"><input type="checkbox" checked> Online statusy gizle</label>
+              <label class="toggle-line"><input type="checkbox"> Diňe klasdaşlardan habar kabul et</label>
+              <label class="toggle-line"><input type="checkbox" checked> Email habarnamalary</label>
+            </div>
+          </div>
+        </section>
+
+        <section id="faq" class="faq">
+          <div class="section-heading">
+            <p class="eyebrow">Sorag-jogap</p>
+            <h2>Köp soralýan soraglar</h2>
+          </div>
+          <details open><summary>Hasaba alyş mugtmy?</summary><p>Demo MVP-de tölegli funksiýa ýok. Töleg girizilse, aýratyn düşündiriş we razylyk gerek.</p></details>
+          <details><summary>Profil nädip döredilýär?</summary><p>Email bilen girip, kabinetde adyňy, şäheriňi, gyzyklanmalaryňy we gysga düşündirişiňi goşýarsyň.</p></details>
+          <details><summary>Hasaby nädip pozmaly?</summary><p>Sazlamalarda hasaby pozmak bölümi bar. Demo görnüşinde bu proses görkezilýär.</p></details>
+          <details><summary>Şikaýat nädip iberilýär?</summary><p>Profil ýa-da habar ýanyndaky şikaýat düwmesi bilen sebäbi saýlap iberilýär.</p></details>
+          <details><summary>AI ýa-da galp profiller ulanylýarmy?</summary><p>Ýok. Demo profiller diňe interfeýs görkezmek üçin döredilen toslama maglumatlardyr.</p></details>
+        </section>
+      </section>
+
+      <section id="quiz" class="view">
+        <div class="auth-shell">
+          <div class="panel form-panel">
+            <p class="eyebrow">Interaktiw anketa</p>
+            <h2 id="quizTitle">1-nji ädim</h2>
+            <div class="progress"><span id="quizProgress"></span></div>
+            <div id="quizStep"></div>
+            <div class="form-actions">
+              <button class="ghost-button" id="quizBack" type="button">Yza</button>
+              <button class="primary-button" id="quizNext" type="button">Dowam et</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="signup" class="view">
+        <div class="auth-shell">
+          <form class="panel form-panel" id="signupForm">
+            <p class="eyebrow">Hasaba alyş</p>
+            <h2>Akkaunt döret</h2>
+            <label>Email<input required type="email" name="email" autocomplete="email"></label>
+            <label>Parol<input required minlength="8" type="password" name="password" autocomplete="new-password"></label>
+            <label class="check-line"><input required type="checkbox" name="terms"> Ulanyjy ylalaşygy we gizlinlik syýasaty bilen razylaşýaryn</label>
+            <button class="primary-button" type="submit">Hasaba al</button>
+            <button class="google-button" id="googleSignup" type="button">Gmail bilen hasaba al</button>
+            <p class="form-note">Email tassyklama demo görnüşinde awtomatik bellenýär.</p>
+          </form>
+        </div>
+      </section>
+
+      <section id="login" class="view">
+        <div class="auth-shell">
+          <form class="panel form-panel" id="loginForm">
+            <p class="eyebrow">Giriş</p>
+            <h2>Akkaunta gir</h2>
+            <label>Email<input required type="email" name="email" autocomplete="email"></label>
+            <label>Parol<input required minlength="8" type="password" name="password" autocomplete="current-password"></label>
+            <button class="primary-button" type="submit">Girmek</button>
+            <button class="google-button" id="googleLogin" type="button">Gmail bilen gir</button>
+            <a href="#forgot-password">Paroly dikeltmek</a>
+          </form>
+        </div>
+      </section>
+
+      <section id="forgot-password" class="view">
+        <div class="auth-shell">
+          <form class="panel form-panel" id="forgotForm">
+            <p class="eyebrow">Paroly dikeltmek</p>
+            <h2>Email ugrat</h2>
+            <label>Email<input required type="email" name="email"></label>
+            <button class="primary-button" type="submit">Dikeldiş baglanyşygyny ugrat</button>
+          </form>
+        </div>
+      </section>
+
+      <section id="dashboard" class="view app-view">
+        <aside class="sidebar">
+        <strong>Kabinet</strong>
+        <a href="#dashboard">Umumy</a>
+        <a href="#edit-profile">Profil</a>
+        <a href="#profiles">Anketalar</a>
+          <a href="#gallery">Galereýa</a>
+        <a href="#messages">Habarlar</a>
+          <a href="#settings">Sazlamalar</a>
+          <a href="#admin">Admin</a>
+        </aside>
+        <div class="workspace">
+          <div class="section-heading">
+            <p class="eyebrow">Şahsy kabinet</p>
+            <h2 id="welcomeTitle">Hoş geldiňiz</h2>
+          </div>
+          <div class="dashboard-grid">
+            <article class="stat-card"><span>Profil statusy</span><strong id="profileStatus">Taslama</strong></article>
+            <article class="stat-card"><span>Täze habar</span><strong>2</strong></article>
+            <article class="stat-card"><span>Şikaýat taryhy</span><strong id="reportCount">0</strong></article>
+          </div>
+          <div class="panel">
+            <h3>Soňky hereketler</h3>
+            <ul id="activityLog" class="activity-log"></ul>
+          </div>
+        </div>
+      </section>
+
+      <section id="edit-profile" class="view app-view">
+        <aside class="sidebar">
+          <strong>Profil</strong>
+          <a href="#dashboard">Kabinet</a>
+          <a href="#profiles">Anketalar</a>
+          <a href="#messages">Habarlar</a>
+        </aside>
+        <form class="workspace panel form-panel wide" id="profileForm">
+          <p class="eyebrow">Profil redaktirlemek</p>
+          <h2>Özüň barada maglumat</h2>
+          <div class="form-grid">
+            <label>Görkezilýän at<input name="name" required placeholder="Adyňyz"></label>
+            <label>Ýaş<input name="age" required type="number" min="18" max="90" value="43"></label>
+            <label>Jyns<select name="gender"><option>Aýal</option><option>Erkek</option><option>Görkezme</option></select></label>
+            <label>Şäher<input name="city" value="Kerki"></label>
+            <label>Ýurt<input name="country" value="Türkmenistan"></label>
+            <label>Diller<input name="languages" value="Türkmençe, Rusça"></label>
+          </div>
+          <label>Gyzyklanmalar<input name="interests" value="Klas duşuşygy, maşgala, syýahat"></label>
+          <label>Gysga düşündiriş<textarea name="bio" rows="4">Klasdaşlar bilen habarlaşmak we täzelikleri paýlaşmak isleýärin.</textarea></label>
+          <button class="primary-button" type="submit">Profil sakla</button>
+        </form>
+      </section>
+
+      <section id="profiles" class="view app-view">
+        <aside class="sidebar">
+          <strong>Anketalar</strong>
+          <a href="#dashboard">Kabinet</a>
+          <a href="#messages">Habarlar</a>
+          <a href="#settings">Sazlamalar</a>
+        </aside>
+        <div class="workspace">
+          <div class="section-heading">
+            <p class="eyebrow">Katalog</p>
+            <h2>Klasdaşlaryň anketalary</h2>
+          </div>
+          <div class="filters panel">
+            <label>Şäher<select id="cityFilter"><option value="">Ählisi</option><option>Kerki</option><option>Türkmenabat</option><option>Aşgabat</option></select></label>
+            <label>Gyzyklanma<input id="interestFilter" placeholder="meselem: syýahat"></label>
+            <button class="primary-button" id="applyFilters" type="button">Süz</button>
+          </div>
+          <div class="profile-grid" id="profileGrid"></div>
+        </div>
+      </section>
+
+      <section id="gallery" class="view app-view">
+        <aside class="sidebar">
+          <strong>Galereýa</strong>
+          <a href="#dashboard">Kabinet</a>
+          <a href="#profiles">Anketalar</a>
+          <a href="#messages">Habarlar</a>
+          <a href="#settings">Sazlamalar</a>
+        </aside>
+        <div class="workspace">
+          <div class="section-heading">
+            <p class="eyebrow">Umumy klas albomy</p>
+            <h2>Klasdaşlara degişli surat galereýasy</h2>
+            <p>Bu bölüm klas duşuşygy, mekdep ýatlamalary we umumy topar suratlary üçin niýetlenen demo albomdyr. Production görnüşinde suratlar moderasiýadan geçmeli we diňe razylyk bilen goýulmaly.</p>
+          </div>
+          <form class="gallery-upload panel" id="galleryUploadForm">
+            <label>Surat saýla
+              <input id="galleryFile" name="photo" type="file" accept="image/png,image/jpeg,image/webp">
+            </label>
+            <label>At ýa-da düşündiriş
+              <input name="caption" maxlength="80" placeholder="Meselem: 2000-nji ýyl uçurymlar duşuşygy">
+            </label>
+            <button class="primary-button" type="submit">Galereýa goş</button>
+          </form>
+          <div class="gallery-grid" id="galleryGrid"></div>
+        </div>
+      </section>
+
+      <section id="messages" class="view app-view">
+        <aside class="sidebar">
+          <strong>Habarlar</strong>
+          <a href="#dashboard">Kabinet</a>
+          <a href="#profiles">Anketalar</a>
+          <a href="#gallery">Galereýa</a>
+          <a href="#settings">Sazlamalar</a>
+        </aside>
+        <div class="workspace">
+          <div class="chat-layout panel">
+            <div class="conversation-list" id="conversationList"></div>
+            <div class="chat-window">
+              <div id="chatHeader" class="chat-header">Söhbet saýla</div>
+              <div id="chatMessages" class="chat-messages"></div>
+              <div class="video-call" id="videoCallPanel">
+                <div class="video-grid">
+                  <div>
+                    <video id="localVideo" autoplay muted playsinline></video>
+                    <span>Öz kameram</span>
+                  </div>
+                  <div>
+                    <video id="remoteVideo" autoplay playsinline></video>
+                    <span>Çagyrylan klasdaş</span>
+                  </div>
+                </div>
+                <p id="videoStatus">Wideoçat taýýar. Kamera rugsady soralanda kabul ediň.</p>
+              </div>
+              <form id="messageForm" class="message-form">
+                <input name="message" placeholder="Habaryňy ýaz..." aria-label="Habaryňy ýaz">
+                <button class="primary-button" type="submit">Ugrat</button>
+              </form>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="settings" class="view app-view">
+        <aside class="sidebar">
+          <strong>Sazlamalar</strong>
+          <a href="#dashboard">Kabinet</a>
+          <a href="#messages">Habarlar</a>
+          <a href="#legal">Hukuk</a>
+        </aside>
+        <div class="workspace panel">
+          <p class="eyebrow">Gizlinlik we habarnama</p>
+          <h2>Sazlamalar</h2>
+          <label class="toggle-line"><input type="checkbox" checked> Online statusymy gizle</label>
+          <label class="toggle-line"><input type="checkbox" checked> Nätanyşlardan habar almagy çäklendir</label>
+          <label class="toggle-line"><input type="checkbox"> Email habarnamalaryny aç</label>
+          <button class="danger-button" id="deleteAccount" type="button">Hasaby pozmagy soramak</button>
+        </div>
+      </section>
+
+      <section id="admin" class="view app-view">
+        <aside class="sidebar">
+          <strong>Admin</strong>
+          <a href="#dashboard">Kabinet</a>
+          <a href="#profiles">Anketalar</a>
+          <a href="#messages">Habarlar</a>
+        </aside>
+        <div class="workspace">
+          <div class="section-heading">
+            <p class="eyebrow">Moderasiýa paneli</p>
+            <h2>Şikaýatlar we töwekgelçilikler</h2>
+          </div>
+          <div class="dashboard-grid">
+            <article class="stat-card"><span>Ulanyjylar</span><strong>128</strong></article>
+            <article class="stat-card"><span>Foto nobaty</span><strong>7</strong></article>
+            <article class="stat-card"><span>Şikaýatlar</span><strong id="adminReportCount">0</strong></article>
+          </div>
+          <div class="panel">
+            <h3>Şikaýat nobaty</h3>
+            <div id="reportQueue" class="report-queue"></div>
+          </div>
+        </div>
+      </section>
+
+      <section id="legal" class="view">
+        <div class="legal-page">
+          <p class="eyebrow">Hukuk sahypalary</p>
+          <h1>Ulanyjy ylalaşygy, gizlinlik we cookies</h1>
+          <p>Bu demo sahypa tehniki ýumuşdaky hukuk gurluşyny görkezýär. Production görnüşinde doly hukuk tekstleri ýerli kanunçylyk we hyzmat şertleri boýunça tassyklanmaly.</p>
+          <div class="legal-grid">
+            <article><h2>Ulanyjy ylalaşygy</h2><p>18+ ulanyjylar, hormat goýmak, galp profil açmazlyk, kemsitmezlik we rugsatsyz maglumat paýlaşmazlyk borçlary.</p></article>
+            <article><h2>Gizlinlik syýasaty</h2><p>Email, profil maglumatlary, habarlaşma meta-maglumatlary we razylyk ýazgylary diňe hyzmaty işletmek üçin ulanylýar.</p></article>
+            <article><h2>Cookie syýasaty</h2><p>Zerur cookies, analitika razylygy we ulanyjynyň razylygy kabul etmek ýa-da ret etmek hukugy görkezilýär.</p></article>
+            <article><h2>Hasaby pozmak</h2><p>Ulanyjy sazlamalardan hasabyny we suratlaryny pozmak haýyşyny iberip bilýär.</p></article>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <div>
+        <strong>Klasdaşlar</strong>
+        <p>27-nji mekdebiň 2000-nji ýyl uçurymlary üçin howpsuz aragatnaşyk prototipi.</p>
+      </div>
+      <nav aria-label="Footer">
+        <a href="#legal">Ulanyjy ylalaşygy</a>
+        <a href="#legal">Gizlinlik</a>
+        <a href="#legal">Cookies</a>
+        <a href="#gallery">Galereýa</a>
+        <a href="#faq">Kömek</a>
+        <a href="mailto:support@klasdaslar.example">support@klasdaslar.example</a>
+      </nav>
+    </footer>
+
+    <div class="cookie-consent" id="cookieConsent" role="region" aria-label="Cookie razylygy">
+      <p>Analitika we amatlylyk cookies ulanmaga razylyk berýärsiňizmi?</p>
+      <button class="ghost-button small" id="rejectCookies" type="button">Ret et</button>
+      <button class="primary-button small" id="acceptCookies" type="button">Kabul et</button>
+    </div>
+
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+    <script src="app.js"></script>
+  </body>
+</html>
