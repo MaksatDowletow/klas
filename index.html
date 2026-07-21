@@ -1,67 +1,129 @@
 <!DOCTYPE html>
 <html lang="tk">
 <head>
-<meta charset="utf-8"/>
-<meta content="width=device-width,initial-scale=1" name="viewport"/>
-<meta content="Klas — synpdaşlar, mekdep jemgyýeti, habarlaşyk we ýatlamalar platformasy." name="description"/>
-<meta content="#2563eb" name="theme-color"/>
-<title>Klas — Mekdep jemgyýeti</title>
-<link href="klas-v3.css?v=20260721" rel="stylesheet"/>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="description" content="Klas — synpdaşlar, mekdep jemgyýeti, habarlaşyk we ýatlamalar platformasy." />
+  <meta name="theme-color" content="#2563eb" />
+  <title>Klas — Mekdep jemgyýeti</title>
+  <link rel="stylesheet" href="klas-v4.css?v=20260721" />
 </head>
 <body>
-<header class="topbar"><div class="topbar-inner">
-<button aria-label="Menýu" class="icon-btn mobile-menu" id="menuBtn">☰</button>
-<a class="brand" href="#"><span class="logo">K</span><span>Klas</span></a>
-<div class="search"><span>⌕</span><input id="searchInput" placeholder="Synpdaş, gurnak ýa-da post gözle..."/></div>
-<div class="top-actions">
-<button aria-label="Tema" class="icon-btn" id="themeBtn">🌙</button>
-<button aria-label="Bildirişler" class="icon-btn" data-page="notifications">🔔<span class="badge" id="noticeBadge">3</span></button>
-<button aria-label="Habarlar" class="icon-btn" data-page="messages">💬</button>
-<button class="profile-btn" data-page="settings"><img alt="Maksat" class="avatar" src="https://i.pravatar.cc/100?img=12"/><span>Maksat</span></button>
-</div></div></header>
-<div class="layout">
-<aside class="sidebar" id="sidebar">
-<nav class="card nav">
-<button class="active" data-page="feed">🏠 <span>Lenta</span></button>
-<button data-page="classmates">👥 <span>Synpdaşlar</span><span class="count">128</span></button>
-<button data-page="messages">💬 <span>Habarlaşyk</span><span class="count">4</span></button>
-<button data-page="groups">🏫 <span>Gurnaklar</span></button>
-<button data-page="media">🖼️ <span>Media</span></button>
-<button data-page="events">📅 <span>Duşuşyklar</span></button>
-<button data-page="saved">🔖 <span>Saklananlar</span></button>
-<button data-page="notifications">🔔 <span>Bildirişler</span></button>
-<button data-page="settings">⚙️ <span>Sazlamalar</span></button>
-</nav>
-<div class="school-card"><small>MEKDEP GIŇIŞLIGI</small><h3>Öde Abdullaýew adyndaky mekdep</h3><p>2000-nji ýylyň uçurymlary</p><button data-page="groups">Giňişlige geç</button></div>
-</aside>
-<main class="main">
-<section class="page active stack" id="page-feed">
-<div class="card stories">
-<div class="story"><div class="story-add">＋</div><span>Täze pursat</span></div>
-<div class="story"><div class="story-ring"><img alt="Aýlar" src="https://i.pravatar.cc/100?img=47"/></div><span>Aýlar</span></div>
-<div class="story"><div class="story-ring"><img alt="Serdar" src="https://i.pravatar.cc/100?img=11"/></div><span>Serdar</span></div>
-<div class="story"><div class="story-ring"><img alt="Mähri" src="https://i.pravatar.cc/100?img=44"/></div><span>Mähri</span></div>
-<div class="story"><div class="story-ring"><img alt="Döwlet" src="https://i.pravatar.cc/100?img=15"/></div><span>Döwlet</span></div>
-</div>
-<div class="card composer"><div class="composer-row"><img alt="" class="avatar" src="https://i.pravatar.cc/100?img=12"/><button class="composer-open" id="composerOpen">Näme barada paýlaşmak isleýärsiňiz?</button></div><div class="composer-actions"><button>🖼️ Surat</button><button>🎥 Wideo</button><button>📅 Duşuşyk</button></div></div>
-<div class="stack" id="feed"></div>
-</section>
-<section class="page card page-card" id="page-classmates"><div class="page-head"><div><h1>Synpdaşlar</h1><p>Mekdep ýyllaryndaky dostlaryňyzy tapyň.</p></div><button class="primary" id="inviteBtn">+ Çagyr</button></div><div class="grid2" id="people"></div></section>
-<section class="page card" id="page-messages"><div class="chat-shell"><div class="chat-list"><h1>Habarlar</h1><div id="chatList"></div></div><div class="chat-main"><div class="chat-head" id="chatHead">Çaty saýlaň</div><div class="messages" id="messages"></div><form class="chat-form" id="chatForm"><input id="chatInput" placeholder="Habar ýazyň..."/><button>Ugrat</button></form></div></div></section>
-<section class="page card page-card" id="page-groups"><div class="page-head"><div><h1>Gurnaklar we mekdepler</h1><p>Gyzyklanmalaryňyza laýyk jemgyýetlere goşulyň.</p></div><button class="primary">+ Gurnak döret</button></div><div class="grid2" id="groups"></div></section>
-<section class="page card page-card" id="page-media"><div class="page-head"><div><h1>Media merkezi</h1><p>Suratlar, albomlar we ýatlama wideolary.</p></div><button class="primary">+ Ýükle</button></div><div class="media-grid"><img alt="Mekdep ýatlamasy" src="https://picsum.photos/seed/klas1/600/600"/><img alt="Synp suraty" src="https://picsum.photos/seed/klas2/600/600"/><img alt="Duşuşyk" src="https://picsum.photos/seed/klas3/600/600"/><img alt="Mekdep" src="https://picsum.photos/seed/klas4/600/600"/><img alt="Uçurymlar" src="https://picsum.photos/seed/klas5/600/600"/><img alt="Ýatlama" src="https://picsum.photos/seed/klas6/600/600"/></div></section>
-<section class="page card page-card" id="page-events"><div class="page-head"><div><h1>Duşuşyklar</h1><p>Geljek çäreler we uçurymlar duşuşyklary.</p></div><button class="primary">+ Çäre döret</button></div><div class="event"><div class="datebox"><small>AWG</small><b>15</b></div><div><b>2000-nji ýyl uçurymlarynyň duşuşygy</b><p>Kerki · Öde Abdullaýew adyndaky mekdep · 18:00</p></div><button class="secondary" id="attendBtn">Gatnaşaryn</button></div></section>
-<section class="page card page-card" id="page-saved"><div class="page-head"><div><h1>Saklananlar</h1><p>Soňkyra okamak üçin bellän postlaryňyz.</p></div></div><div class="stack" id="saved"></div></section>
-<section class="page card page-card" id="page-notifications"><div class="page-head"><div><h1>Bildirişler</h1><p>Täze habarlar we jemgyýet hereketleri.</p></div><button class="secondary" id="readAll">Ählisini okalan et</button></div><div class="stack" id="notifications"></div></section>
-<section class="page card page-card" id="page-settings"><div class="page-head"><div><h1>Sazlamalar</h1><p>Profil, gizlinlik we bildiriş dolandyryşy.</p></div></div><div class="settings-row"><div><b>Bildirişler</b><small>Täze habarlar barada duýduryş al</small></div><button class="switch on" id="notifySwitch"><span></span></button></div><div class="settings-row"><div><b>Profiliň görünmegi</b><small>Maglumatlaryňyzy kim görüp biler</small></div><select id="privacy"><option value="classmates">Diňe synpdaşlar</option><option value="school">Mekdep agzalary</option><option value="public">Hemmeler</option></select></div><div class="settings-row"><div><b>Garaňky tema</b><small>Göz üçin amatly garaňky görnüş</small></div><button class="switch" id="darkSwitch"><span></span></button></div></section>
-</main>
-<aside class="rightcol">
-<div class="card side-card"><div class="side-title"><b>Tanap biljekleriňiz</b><button class="mini" data-page="classmates">Ählisi</button></div><div id="suggestions"></div></div>
-<div class="card side-card"><div class="side-title"><b>Onlaýn synpdaşlar</b><span>● 5</span></div><div class="online"><img alt="" src="https://i.pravatar.cc/80?img=32"/><img alt="" src="https://i.pravatar.cc/80?img=33"/><img alt="" src="https://i.pravatar.cc/80?img=34"/><img alt="" src="https://i.pravatar.cc/80?img=35"/><img alt="" src="https://i.pravatar.cc/80?img=36"/></div></div>
-</aside>
-</div>
-<div class="modal" id="composerModal"><div class="modal-card"><div class="modal-head"><h2>Täze post</h2><button class="close" id="composerClose">✕</button></div><textarea id="postText" placeholder="Pikiriňizi, habaryňyzy ýa-da ýatlamaňyzy ýazyň..."></textarea><div class="modal-footer"><button class="secondary" id="composerCancel">Ýatyr</button><button class="primary" id="publishBtn">Çap et</button></div></div></div>
-<div class="toast" id="toast"></div>
-<script src="klas-v3.js?v=20260721"></script>
+  <header class="topbar">
+    <div class="topbar-inner">
+      <button aria-label="Menýuny aç" class="icon-btn mobile-menu" id="menuBtn">☰</button>
+      <a class="brand" href="#feed" aria-label="Klas baş sahypasy"><span class="logo">K</span><span>Klas</span></a>
+      <div class="search-wrap">
+        <span class="search-icon">⌕</span>
+        <input id="searchInput" autocomplete="off" placeholder="Synpdaş, gurnak, çäre ýa-da post gözle..." />
+        <button class="search-clear hidden" id="searchClear" aria-label="Gözlegi arassala">✕</button>
+        <div class="search-results hidden" id="searchResults"></div>
+      </div>
+      <div class="top-actions">
+        <button aria-label="Tema" class="icon-btn" id="themeBtn">🌙</button>
+        <button aria-label="Bildirişler" class="icon-btn" data-page="notifications">🔔<span class="badge" id="noticeBadge">3</span></button>
+        <button aria-label="Habarlar" class="icon-btn" data-page="messages">💬<span class="badge secondary-badge hidden" id="messageBadge">0</span></button>
+        <button class="profile-btn" data-page="settings"><img alt="Profil suraty" class="avatar" id="headerAvatar" src="https://i.pravatar.cc/100?img=12"/><span id="headerName">Maksat</span></button>
+      </div>
+    </div>
+  </header>
+
+  <div class="layout">
+    <aside class="sidebar" id="sidebar">
+      <nav class="card nav" aria-label="Esasy bölümler">
+        <button class="active" data-page="feed">🏠 <span>Lenta</span></button>
+        <button data-page="classmates">👥 <span>Synpdaşlar</span><span class="count" id="peopleCount">0</span></button>
+        <button data-page="messages">💬 <span>Habarlaşyk</span><span class="count" id="chatUnreadCount">0</span></button>
+        <button data-page="groups">🏫 <span>Gurnaklar</span></button>
+        <button data-page="media">🖼️ <span>Media</span></button>
+        <button data-page="events">📅 <span>Duşuşyklar</span></button>
+        <button data-page="saved">🔖 <span>Saklananlar</span></button>
+        <button data-page="notifications">🔔 <span>Bildirişler</span></button>
+        <button data-page="settings">⚙️ <span>Sazlamalar</span></button>
+      </nav>
+      <div class="school-card">
+        <small>MEKDEP GIŇIŞLIGI</small>
+        <h3>Öde Abdullaýew adyndaky mekdep</h3>
+        <p>2000-nji ýylyň uçurymlary</p>
+        <button data-page="groups">Giňişlige geç</button>
+      </div>
+    </aside>
+
+    <main class="main">
+      <section class="page active stack" id="page-feed">
+        <div class="card stories" id="stories"></div>
+        <div class="card composer">
+          <div class="composer-row">
+            <img alt="Profil suraty" class="avatar current-user-avatar" src="https://i.pravatar.cc/100?img=12"/>
+            <button class="composer-open" id="composerOpen">Näme barada paýlaşmak isleýärsiňiz?</button>
+          </div>
+          <div class="composer-actions">
+            <button data-compose="image">🖼️ Surat</button>
+            <button data-compose="video">🎥 Wideo</button>
+            <button data-page="events">📅 Duşuşyk</button>
+          </div>
+        </div>
+        <div class="stack" id="feed"></div>
+      </section>
+
+      <section class="page card page-card" id="page-classmates">
+        <div class="page-head"><div><h1>Synpdaşlar</h1><p>Mekdep ýyllaryndaky dostlaryňyzy tapyň.</p></div><button class="primary" id="inviteBtn">+ Çagyr</button></div>
+        <div class="filter-row"><input id="peopleFilter" placeholder="Ady ýa-da şäheri boýunça süz..."/><select id="peopleStatus"><option value="all">Ählisi</option><option value="friend">Dostlar</option><option value="pending">Garaşylýar</option><option value="none">Täze adamlar</option></select></div>
+        <div class="grid2" id="people"></div>
+      </section>
+
+      <section class="page card" id="page-messages">
+        <div class="chat-shell">
+          <div class="chat-list"><div class="chat-title-row"><h1>Habarlar</h1><button class="mini" id="newChatBtn">＋</button></div><input class="chat-search" id="chatSearch" placeholder="Çat gözle..."/><div id="chatList"></div></div>
+          <div class="chat-main"><div class="chat-head" id="chatHead">Çaty saýlaň</div><div class="messages" id="messages"></div><form class="chat-form" id="chatForm"><input id="chatInput" autocomplete="off" placeholder="Habar ýazyň..."/><button>Ugrat</button></form></div>
+        </div>
+      </section>
+
+      <section class="page card page-card" id="page-groups">
+        <div class="page-head"><div><h1>Gurnaklar we mekdepler</h1><p>Gyzyklanmalaryňyza laýyk jemgyýetlere goşulyň.</p></div><button class="primary" id="createGroupBtn">+ Gurnak döret</button></div>
+        <div class="grid2" id="groups"></div>
+      </section>
+
+      <section class="page card page-card" id="page-media">
+        <div class="page-head"><div><h1>Media merkezi</h1><p>Suratlar, albomlar we ýatlama wideolary.</p></div><button class="primary" id="uploadMediaBtn">+ Ýükle</button></div>
+        <div class="media-toolbar"><button class="mini active" data-media-filter="all">Ählisi</button><button class="mini" data-media-filter="image">Suratlar</button><button class="mini" data-media-filter="video">Wideolar</button></div>
+        <div class="media-grid" id="mediaGrid"></div>
+      </section>
+
+      <section class="page card page-card" id="page-events">
+        <div class="page-head"><div><h1>Duşuşyklar</h1><p>Geljek çäreler we uçurymlar duşuşyklary.</p></div><button class="primary" id="createEventBtn">+ Çäre döret</button></div>
+        <div class="stack" id="events"></div>
+      </section>
+
+      <section class="page card page-card" id="page-saved"><div class="page-head"><div><h1>Saklananlar</h1><p>Soňkyra okamak üçin bellän postlaryňyz.</p></div></div><div class="stack" id="saved"></div></section>
+      <section class="page card page-card" id="page-notifications"><div class="page-head"><div><h1>Bildirişler</h1><p>Täze habarlar we jemgyýet hereketleri.</p></div><button class="secondary" id="readAll">Ählisini okalan et</button></div><div class="stack" id="notifications"></div></section>
+
+      <section class="page card page-card" id="page-settings">
+        <div class="page-head"><div><h1>Sazlamalar</h1><p>Profil, gizlinlik we ýerli maglumat dolandyryşy.</p></div><button class="primary" id="editProfileBtn">Profili üýtget</button></div>
+        <div class="profile-summary"><img class="profile-large" id="profileAvatar" alt="Profil"/><div><h2 id="profileName"></h2><p id="profileBio"></p><small id="profileMeta"></small></div></div>
+        <div class="settings-row"><div><b>Bildirişler</b><small>Täze habarlar barada duýduryş al</small></div><button class="switch on" id="notifySwitch"><span></span></button></div>
+        <div class="settings-row"><div><b>Profiliň görünmegi</b><small>Maglumatlaryňyzy kim görüp biler</small></div><select id="privacy"><option value="classmates">Diňe synpdaşlar</option><option value="school">Mekdep agzalary</option><option value="public">Hemmeler</option></select></div>
+        <div class="settings-row"><div><b>Garaňky tema</b><small>Göz üçin amatly garaňky görnüş</small></div><button class="switch" id="darkSwitch"><span></span></button></div>
+        <div class="settings-row"><div><b>Maglumatlary eksport et</b><small>Post, çat, çäre we sazlamalaryň ätiýaç nusgasyny al</small></div><button class="secondary" id="exportBtn">JSON ýükläp al</button></div>
+        <div class="settings-row"><div><b>Maglumatlary import et</b><small>Öňki ätiýaç nusgany dikelt</small></div><label class="secondary file-label">JSON saýla<input type="file" id="importInput" accept="application/json"/></label></div>
+        <div class="settings-row danger-row"><div><b>Ýerli maglumatlary arassala</b><small>Programmany başlangyç ýagdaýa getirýär</small></div><button class="danger" id="resetBtn">Arassala</button></div>
+      </section>
+    </main>
+
+    <aside class="rightcol">
+      <div class="card side-card"><div class="side-title"><b>Tanap biljekleriňiz</b><button class="mini" data-page="classmates">Ählisi</button></div><div id="suggestions"></div></div>
+      <div class="card side-card"><div class="side-title"><b>Onlaýn synpdaşlar</b><span id="onlineCount">● 0</span></div><div class="online" id="onlinePeople"></div></div>
+      <div class="card side-card"><div class="side-title"><b>Ýakyn duşuşyk</b><button class="mini" data-page="events">Aç</button></div><div id="nextEvent"></div></div>
+    </aside>
+  </div>
+
+  <div class="modal" id="appModal" aria-hidden="true"><div class="modal-card"><div class="modal-head"><h2 id="modalTitle">Penjire</h2><button class="close" id="modalClose">✕</button></div><div id="modalBody"></div><div class="modal-footer" id="modalFooter"></div></div></div>
+  <div class="lightbox" id="lightbox"><button class="lightbox-close" id="lightboxClose">✕</button><div id="lightboxContent"></div></div>
+  <div class="toast" id="toast" role="status"></div>
+  <input class="hidden" type="file" id="hiddenImageInput" accept="image/*"/>
+  <script src="klas-v4-1.js?v=20260721"></script>
+  <script src="klas-v4-2.js?v=20260721"></script>
+  <script src="klas-v4-3.js?v=20260721"></script>
+  <script src="klas-v4-4.js?v=20260721"></script>
 </body>
 </html>
