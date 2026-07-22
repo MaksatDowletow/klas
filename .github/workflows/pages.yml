@@ -77,6 +77,9 @@ jobs:
           grep -q 'id="mobileChatBack"' index.html
           grep -q 'id="accountActionBtn"' index.html
           grep -q 'Google bilen giriş ýa-da akkaunt döretmek' index.html
+          grep -q 'signInWithPopup' klas-backend-core.js
+          ! grep -q 'signInWithRedirect' klas-backend-core.js
+          grep -q "previousStatus === 'pending'" klas-backend-core.js
           grep -q 'Gizlinlik we jemgyýet düzgünleri' privacy.html
           grep -q "sign_in_provider == 'google.com'" firestore.rules
           grep -q 'function isActiveMember()' firestore.rules
@@ -85,7 +88,7 @@ jobs:
           grep -q '"scope": "/klas/"' manifest.webmanifest
           grep -q 'https://maksatdowletow.github.io/klas/' index.html
           ! grep -q 'github.io/Klas/' index.html
-          grep -q "version: '5.7.0'" klas-config.js
+          grep -q "version: '5.7.1'" klas-config.js
 
       - name: Build clean Pages artifact
         shell: bash
@@ -135,7 +138,7 @@ jobs:
           cat > _site/release.json <<EOF
           {
             "app": "Klas",
-            "version": "5.7.0",
+            "version": "5.7.1",
             "commit": "${GITHUB_SHA}",
             "dynamicPages": true,
             "realtimeComments": true,

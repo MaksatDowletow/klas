@@ -3,8 +3,6 @@ import {
   getAuth,
   GoogleAuthProvider,
   signInWithPopup,
-  signInWithRedirect,
-  getRedirectResult,
   signOut,
   onAuthStateChanged,
   setPersistence,
@@ -105,7 +103,8 @@ export function authErrorMessage(error){
   const messages = {
     'auth/popup-closed-by-user': 'Google giriş penjiresi tamamlanmazdan ýapyldy.',
     'auth/cancelled-popup-request': 'Öňki Google giriş synanyşygy bes edildi. Täzeden synanyşyň.',
-    'auth/popup-blocked': 'Brauzer Google giriş penjiresini bloklady. Redirect arkaly dowam edilýär.',
+    'auth/popup-blocked': 'Brauzer Google giriş penjiresini bloklady. Popup rugsadyny açyp täzeden synanyşyň.',
+    'auth/operation-not-supported-in-this-environment': 'Bu brauzer Google giriş penjiresini açyp bilmedi. Adaty Chrome, Edge ýa-da Safari penjiresinden synanyşyň.',
     'auth/network-request-failed': 'Internet baglanyşygy sebäpli Google giriş başartmady.',
     'auth/unauthorized-domain': 'Bu domen Firebase Google giriş üçin rugsatlandyrylmady.',
     'auth/operation-not-allowed': 'Firebase Console-da Google giriş usuly açylmadyk.',
@@ -190,28 +189,12 @@ export async function uploadMedia(file, folder = 'klas/posts'){
   return normalizeHttpUrl(data.secure_url, { allowEmpty: false });
 }
 
-function shouldUseRedirect(){
-  return window.matchMedia?.('(max-width: 760px)').matches
-    || /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
-}
-
 export async function login(){
   if (authOperation) return authOperation;
   if (!navigator.onLine) throw new Error('Google giriş üçin internet baglanyşygy gerek.');
   authOperation = (async () => {
     updateAuthButton({ busy: true, signedIn: false });
-    if (shouldUseRedirect()) {
-      await signInWithRedirect(auth, provider);
-      return;
-    }
-    try { await signInWithPopup(auth, provider); }
-    catch (error) {
-      if (['auth/popup-blocked', 'auth/operation-not-supported-in-this-environment'].includes(error.code)) {
-        await signInWithRedirect(auth, provider);
-        return;
-      }
-      throw error;
-    }
+    await signInWithPopup(auth, provider);
   })();
   try { return await authOperation; }
   finally {
@@ -254,6 +237,7 @@ async function ensureProfile(user){
   const [userSnapshot, profileSnapshot] = await Promise.all([getDoc(userRef), getDoc(profileRef)]);
 
   const isNewAccount = !userSnapshot.exists();
+  const previousAccount = userSnapshot.data() || {};
   if (isNewAccount) {
     await setDoc(userRef, {
       uid: user.uid,
@@ -268,11 +252,25 @@ async function ensureProfile(user){
       lastLogin: serverTimestamp()
     });
   } else {
+    const previousStatus = previousAccount.status;
+    const normalizedStatus = !previousStatus || previousStatus === 'pending'
+      ? 'active'
+      : previousStatus;
+    const normalizedRole = ['user', 'moderator', 'admin'].includes(previousAccount.role)
+      ? previousAccount.role
+      : 'user';
+    const normalizedOnboarding = typeof previousAccount.onboardingComplete === 'boolean'
+      ? previousAccount.onboardingComplete
+      : profileSnapshot.exists();
     await setDoc(userRef, {
+      uid: user.uid,
       email: user.email || '',
       displayName: user.displayName || '',
       photoURL: user.photoURL || '',
       authProvider: 'google.com',
+      role: normalizedRole,
+      status: normalizedStatus,
+      onboardingComplete: normalizedOnboarding,
       lastLogin: serverTimestamp()
     }, { merge: true });
   }
@@ -304,8 +302,32 @@ async function ensureProfile(user){
       lastSeen: serverTimestamp()
     });
   } else {
+    const previousProfile = profileSnapshot.data() || {};
+    const validText = (value, fallback, max, required = false) => {
+      const text = typeof value === 'string' ? value.trim() : '';
+      if (text.length > max || (required && !text)) return fallback;
+      return text;
+    };
+    const avatarURL = typeof previousProfile.avatarURL === 'string'
+      && /^https:\/\/[^\s<>]+$/i.test(previousProfile.avatarURL)
+      ? previousProfile.avatarURL
+      : base.avatarURL;
     await setDoc(profileRef, {
+      uid: user.uid,
+      fullName: validText(previousProfile.fullName, base.fullName, 100, true),
+      shortName: validText(previousProfile.shortName, base.shortName, 30, true),
+      avatarURL,
+      city: validText(previousProfile.city, '', 80),
+      bio: validText(previousProfile.bio, '', 500),
+      profession: validText(previousProfile.profession, '', 80),
+      school: validText(previousProfile.school, base.school, 120),
+      graduationYear: Number.isInteger(previousProfile.graduationYear)
+        ? previousProfile.graduationYear
+        : base.graduationYear,
       email: deleteField(),
+      role: deleteField(),
+      status: deleteField(),
+      admin: deleteField(),
       online: true,
       lastSeen: serverTimestamp(),
       updatedAt: serverTimestamp()
@@ -584,13 +606,6 @@ window.addEventListener('pagehide', () => {
 
 try { await setPersistence(auth, browserLocalPersistence); }
 catch (error) { console.warn('Auth persistence sazlanmady', error); }
-try { await getRedirectResult(auth); }
-catch (error) {
-  const message = authErrorMessage(error);
-  console.error('Redirect giriş başartmady', error);
-  setStatus(message, 'error');
-  toast(message);
-}
 
 onAuthStateChanged(auth, user => {
   if (user) {

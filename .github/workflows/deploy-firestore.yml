@@ -67,6 +67,8 @@ jobs:
           grep -q 'function isActiveMember()' firestore.rules
           grep -q 'function isProvisionedMember()' firestore.rules
           grep -q "get('status', 'blocked') == 'active'" firestore.rules
+          grep -q "get('status', 'pending') == 'pending'" firestore.rules
+          grep -q "'uid', 'fullName', 'shortName', 'email', 'role', 'status', 'admin'" firestore.rules
 
       - name: Install Firebase CLI
         run: npm install --global firebase-tools@latest
