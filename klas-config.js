@@ -29,7 +29,7 @@ window.KLAS_CONFIG = Object.freeze({
     disconnectGraceMs: 12000
   }),
   app: Object.freeze({
-    version: '5.4.0',
+    version: '5.5.0',
     firebaseSdkVersion: '12.16.0',
     allowLocalFallback: true,
     dynamicPages: true,
