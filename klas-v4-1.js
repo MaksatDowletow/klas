@@ -98,20 +98,55 @@ function fileToDataUrl(file, maxBytes=1500000){
   });
 }
 
-function showPage(name, updateHash=true){
-  const page=$(`#page-${name}`); if(!page) name='feed';
+const PAGE_NAMES = new Set(['feed','classmates','messages','groups','media','events','saved','notifications','settings']);
+let pageRenderFrame = 0;
+
+function activePageName(){
+  const element = $('.page.active');
+  return element?.id?.replace(/^page-/, '') || 'feed';
+}
+
+function renderPage(name = activePageName()){
+  const page = PAGE_NAMES.has(name) ? name : 'feed';
+  const call = functionName => {
+    const fn = window[functionName];
+    if(typeof fn === 'function') fn();
+  };
+  const renderers = {
+    feed: ['renderStories','renderAllPosts'],
+    classmates: ['renderPeople'],
+    messages: ['renderChats','renderMessages'],
+    groups: ['renderGroups'],
+    media: ['renderMedia'],
+    events: ['renderEvents','renderNextEvent'],
+    saved: ['renderSaved'],
+    notifications: ['renderNotifications'],
+    settings: ['renderProfile']
+  };
+  (renderers[page] || []).forEach(call);
+  ['updateBadges','renderSuggestions','renderOnline','renderNextEvent'].forEach(call);
+}
+
+function schedulePageRender(name = activePageName()){
+  cancelAnimationFrame(pageRenderFrame);
+  pageRenderFrame = requestAnimationFrame(() => {
+    pageRenderFrame = 0;
+    renderPage(name);
+  });
+}
+
+function showPage(requestedName, updateHash=true){
+  const name = PAGE_NAMES.has(requestedName) && $(`#page-${requestedName}`) ? requestedName : 'feed';
   $$('.page').forEach(el=>el.classList.remove('active'));
   $(`#page-${name}`)?.classList.add('active');
   $$('[data-page]').forEach(el=>el.classList.toggle('active',el.dataset.page===name));
   $('#sidebar').classList.remove('open');
   $('#searchResults').classList.add('hidden');
-  if(updateHash && location.hash !== `#${name}`) history.pushState(null,'',`#${name}`);
-  if(name==='saved') renderSaved();
-  if(name==='notifications') renderNotifications();
-  if(name==='settings') renderProfile();
-  if(name==='media') renderMedia();
-  if(name==='events') renderEvents();
-  if(name==='messages') renderChats();
+  if(updateHash && location.hash !== `#${name}`){
+    history.pushState({page:name},'',`${location.pathname}${location.search}#${name}`);
+  }
+  schedulePageRender(name);
+  window.dispatchEvent(new CustomEvent('klas:pagechange',{detail:{page:name}}));
   window.scrollTo({top:0,behavior:'smooth'});
 }
 function routeFromHash(){ showPage((location.hash||'#feed').slice(1),false); }
@@ -128,4 +163,3 @@ function openModal({title,body,confirmText='Sakla',cancelText='Ýatyr',onConfirm
 function closeModal(){ $('#appModal').classList.remove('open'); $('#appModal').setAttribute('aria-hidden','true'); }
 function openLightbox(html){ $('#lightboxContent').innerHTML=html; $('#lightbox').classList.add('open'); }
 function closeLightbox(){ $('#lightbox').classList.remove('open'); $('#lightboxContent').innerHTML=''; }
-
