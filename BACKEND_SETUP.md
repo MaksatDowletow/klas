@@ -42,6 +42,16 @@ Wideoçat WebRTC ulanýar, Firestore diňe signaling maglumatlaryny saklaýar:
 - `calls/{callId}/callerCandidates`;
 - `calls/{callId}/calleeCandidates`.
 
+Işleýän akym:
+
+- diňe Google bilen giriş eden iki Klas agzasynyň hakyky 1:1 çatynda **Wideoçat** düwmesi görünýär;
+- jaň etmek, kabul etmek, ret etmek we tamamlamak;
+- mikrofony/kamerany öçürmek we mobil enjamda öň/arqa kamerany çalyşmak;
+- 45 sekunt jogapsyz jaň timeout-y, köne jaňlary arassalamak we 12 sekuntlyk network recovery;
+- Firestore Rules arkaly diňe jaňa gatnaşýanlaryň SDP/ICE signaling maglumatlaryna girişmegi.
+
+End-to-end barlag üçin iki aýratyn Google akkaunty bilen iki brauzer ýa-da iki enjam ulanyň.
+
 GitHub Pages HTTPS bolany üçin kamera/mikrofon API-si işläp biler. Ulanyjy brauzerde kamera we mikrofon rugsadyny bermeli.
 
 `klas-config.js` häzirki wagtda Google STUN serverlerini ulanýar. Käbir mobil operatorlarda, korporatiw torlarda ýa-da symmetric NAT şertlerinde durnukly jaň üçin aýratyn **TURN serveri** zerur bolýar. TURN credential-laryny diňe howpsuz backend arkaly bermek maslahat berilýär; uzak möhletli TURN secret-i public repository-ä goýmaň.

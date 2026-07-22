@@ -1,6 +1,6 @@
 {
   "app": "Klas",
-  "version": "5.3.1",
-  "features": ["firebase-realtime-chat", "typing", "read-receipts", "webrtc-video-call"],
+  "version": "5.4.0",
+  "features": ["firebase-realtime-chat", "typing", "read-receipts", "webrtc-video-call", "camera-switch", "call-recovery"],
   "deployedAt": "2026-07-22"
 }

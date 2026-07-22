@@ -15,6 +15,23 @@ service cloud.firestore {
         && value.size() <= 2000
         && (value == '' || value.matches('^https://[^\\s<>]+$'));
     }
+    function validSessionDescription(value, expectedType) {
+      return value is map
+        && value.keys().hasOnly(['type', 'sdp'])
+        && value.type == expectedType
+        && validText(value.sdp, 200000, true);
+    }
+    function validIceCandidate(data) {
+      return data.keys().hasOnly([
+          'candidate', 'sdpMid', 'sdpMLineIndex', 'usernameFragment'
+        ])
+        && validText(data.get('candidate', ''), 4096, true)
+        && validText(data.get('sdpMid', ''), 128, false)
+        && data.get('sdpMLineIndex', 0) is int
+        && data.get('sdpMLineIndex', 0) >= 0
+        && data.get('sdpMLineIndex', 0) <= 65535
+        && validText(data.get('usernameFragment', ''), 256, false);
+    }
     function validPublicRole(value) {
       let role = get(accountPath(request.auth.uid)).data.get('role', 'user');
       return validText(value, 80, true)
@@ -253,15 +270,22 @@ service cloud.firestore {
       allow read: if signedIn()
         && (resource.data.callerId == request.auth.uid || resource.data.calleeId == request.auth.uid);
       allow create: if signedIn()
+        && request.resource.data.keys().hasOnly([
+          'callerId', 'calleeId', 'participants', 'type', 'status',
+          'offer', 'createdAt', 'updatedAt'
+        ])
         && request.resource.data.callerId == request.auth.uid
         && request.resource.data.calleeId != request.auth.uid
+        && exists(accountPath(request.resource.data.calleeId))
         && request.resource.data.participants.size() == 2
         && request.resource.data.participants.hasAll([
           request.resource.data.callerId, request.resource.data.calleeId
         ])
         && request.resource.data.type == 'video'
         && request.resource.data.status == 'ringing'
-        && request.resource.data.offer is map;
+        && validSessionDescription(request.resource.data.offer, 'offer')
+        && request.resource.data.createdAt == request.time
+        && request.resource.data.updatedAt == request.time;
       allow update: if signedIn()
         && (resource.data.callerId == request.auth.uid || resource.data.calleeId == request.auth.uid)
         && request.resource.data.callerId == resource.data.callerId
@@ -270,22 +294,33 @@ service cloud.firestore {
         && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
           'answer', 'status', 'updatedAt', 'endedAt'
         ])
+        && request.resource.data.updatedAt == request.time
         && ((request.auth.uid == resource.data.calleeId
             && resource.data.status == 'ringing'
-            && request.resource.data.status in ['accepted', 'declined', 'busy'])
-          || (request.resource.data.status == 'ended'));
+            && request.resource.data.status == 'accepted'
+            && validSessionDescription(request.resource.data.answer, 'answer'))
+          || (request.auth.uid == resource.data.calleeId
+            && resource.data.status == 'ringing'
+            && request.resource.data.status in ['declined', 'busy'])
+          || (resource.data.status in ['ringing', 'accepted']
+            && request.resource.data.status == 'ended'
+            && request.resource.data.endedAt == request.time));
       allow delete: if false;
 
       match /callerCandidates/{candidateId} {
         allow read: if isCallMember(callId);
         allow create: if isCallMember(callId)
-          && get(callPath(callId)).data.callerId == request.auth.uid;
+          && get(callPath(callId)).data.callerId == request.auth.uid
+          && get(callPath(callId)).data.status in ['ringing', 'accepted']
+          && validIceCandidate(request.resource.data);
         allow update, delete: if false;
       }
       match /calleeCandidates/{candidateId} {
         allow read: if isCallMember(callId);
         allow create: if isCallMember(callId)
-          && get(callPath(callId)).data.calleeId == request.auth.uid;
+          && get(callPath(callId)).data.calleeId == request.auth.uid
+          && get(callPath(callId)).data.status == 'accepted'
+          && validIceCandidate(request.resource.data);
         allow update, delete: if false;
       }
     }

@@ -59,7 +59,7 @@ jobs:
           for file in klas-*.js; do node --check "$file"; done
           grep -q 'https://maksatdowletow.github.io/klas/' index.html
           ! grep -q 'github.io/Klas/' index.html
-          grep -q "version: '5.3.1'" klas-config.js
+          grep -q "version: '5.4.0'" klas-config.js
 
       - name: Build clean Pages artifact
         shell: bash
@@ -94,7 +94,7 @@ jobs:
           cat > _site/release.json <<EOF
           {
             "app": "Klas",
-            "version": "5.3.1",
+            "version": "5.4.0",
             "commit": "${GITHUB_SHA}",
             "dynamicPages": true,
             "realtimeComments": true

@@ -24,10 +24,12 @@ window.KLAS_CONFIG = Object.freeze({
         'stun:stun1.l.google.com:19302'
       ]) })
     ]),
-    ringTimeoutMs: 45000
+    ringTimeoutMs: 45000,
+    maxCallAgeMs: 60000,
+    disconnectGraceMs: 12000
   }),
   app: Object.freeze({
-    version: '5.3.1',
+    version: '5.4.0',
     firebaseSdkVersion: '12.16.0',
     allowLocalFallback: true,
     dynamicPages: true,

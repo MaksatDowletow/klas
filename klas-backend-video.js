@@ -11,25 +11,35 @@ import {
   limit,
   serverTimestamp
 } from 'https://www.gstatic.com/firebasejs/12.16.0/firebase-firestore.js';
-import { db, runtime, bridge, config, handleError, toast } from './klas-backend-core.js';
+import { db, runtime, bridge, config, handleError, toast, millis } from './klas-backend-core.js';
 import { createNotification } from './klas-backend-notifications.js';
 
 let activeCall = null;
 let incomingCall = null;
 let incomingStop = null;
 let callTimeout = null;
+let disconnectTimeout = null;
+let durationTimer = null;
+let callStartedAt = 0;
+let callStarting = false;
+let acceptingCall = false;
+let endingCall = false;
+let preferredFacingMode = 'user';
+let callFocusReturn = null;
+let incomingFocusReturn = null;
 
 function ensureVideoUi(){
   if (!document.getElementById('videoCallLayer')) {
     document.body.insertAdjacentHTML('beforeend', `
       <div class="video-call-layer hidden" id="videoCallLayer" aria-hidden="true">
-        <div class="video-call-stage" role="dialog" aria-modal="true" aria-labelledby="videoCallTitle">
+        <div class="video-call-stage" role="dialog" aria-modal="true" aria-labelledby="videoCallTitle" tabindex="-1">
           <video class="remote-video" id="remoteVideo" autoplay playsinline></video>
           <video class="local-video" id="localVideo" autoplay muted playsinline></video>
-          <div class="video-call-top"><h2 id="videoCallTitle">Wideoçat</h2><p id="videoCallStatus">Baglanyşýar…</p></div>
+          <div class="video-call-top"><h2 id="videoCallTitle">Wideoçat</h2><p><span id="videoCallStatus">Baglanyşýar…</span><span class="video-call-duration" id="videoCallDuration" aria-label="Jaňyň dowamlylygy"></span></p></div>
           <div class="video-call-controls">
-            <button class="call-control" id="toggleCallMic" type="button" aria-label="Mikrofony aç ýa-da ýap">🎙️</button>
-            <button class="call-control" id="toggleCallCamera" type="button" aria-label="Kamerany aç ýa-da ýap">📷</button>
+            <button class="call-control" id="toggleCallMic" type="button" aria-label="Mikrofony ýap" aria-pressed="false">🎙️</button>
+            <button class="call-control" id="toggleCallCamera" type="button" aria-label="Kamerany ýap" aria-pressed="false">📷</button>
+            <button class="call-control" id="switchCallCamera" type="button" aria-label="Kamerany çalyş">🔄</button>
             <button class="call-control end" id="hangupVideoCall" type="button" aria-label="Jaňy tamamla">☎</button>
           </div>
         </div>
@@ -57,6 +67,34 @@ function callLayer(){ return element('videoCallLayer'); }
 function incomingLayer(){ return element('incomingCallCard'); }
 function setCallStatus(text){ const node = element('videoCallStatus'); if (node) node.textContent = text; }
 
+function focusElement(node){
+  requestAnimationFrame(() => node?.focus?.({ preventScroll: true }));
+}
+
+function formatDuration(seconds){
+  const minutes = Math.floor(seconds / 60);
+  return `${String(minutes).padStart(2, '0')}:${String(seconds % 60).padStart(2, '0')}`;
+}
+
+function stopDuration(){
+  clearInterval(durationTimer);
+  durationTimer = null;
+  callStartedAt = 0;
+  const node = element('videoCallDuration');
+  if (node) node.textContent = '';
+}
+
+function startDuration(){
+  if (durationTimer) return;
+  callStartedAt = Date.now();
+  const render = () => {
+    const node = element('videoCallDuration');
+    if (node) node.textContent = ` · ${formatDuration(Math.floor((Date.now() - callStartedAt) / 1000))}`;
+  };
+  render();
+  durationTimer = setInterval(render, 1000);
+}
+
 function supportsVideoCall(){
   return Boolean(window.RTCPeerConnection && navigator.mediaDevices?.getUserMedia);
 }
@@ -73,10 +111,12 @@ function profileName(uid){
 function showCallLayer(title, status){
   const layer = callLayer();
   if (!layer) return;
+  callFocusReturn = document.activeElement;
   element('videoCallTitle').textContent = title;
   setCallStatus(status);
   layer.classList.remove('hidden');
   layer.setAttribute('aria-hidden', 'false');
+  focusElement(element('hangupVideoCall'));
 }
 
 function hideCallLayer(){
@@ -84,17 +124,26 @@ function hideCallLayer(){
   if (!layer) return;
   layer.classList.add('hidden');
   layer.setAttribute('aria-hidden', 'true');
+  const target = callFocusReturn;
+  callFocusReturn = null;
+  focusElement(target);
 }
 
 function showIncoming(id, data){
+  if (incomingCall?.id === id) return;
   incomingCall = { id, data, ref: doc(db, 'calls', id) };
   const layer = incomingLayer();
   if (!layer) return;
+  incomingFocusReturn = document.activeElement;
   const avatar = runtime.profiles.get(data.callerId)?.avatarURL || '';
   element('incomingCallerName').textContent = profileName(data.callerId);
-  element('incomingCallerAvatar').src = avatar;
+  const avatarNode = element('incomingCallerAvatar');
+  avatarNode.src = avatar;
+  avatarNode.hidden = !avatar;
   layer.classList.remove('hidden');
   layer.setAttribute('aria-hidden', 'false');
+  navigator.vibrate?.([180, 100, 180]);
+  focusElement(element('acceptVideoCall'));
 }
 
 function hideIncoming(){
@@ -103,6 +152,9 @@ function hideIncoming(){
   if (!layer) return;
   layer.classList.add('hidden');
   layer.setAttribute('aria-hidden', 'true');
+  const target = incomingFocusReturn;
+  incomingFocusReturn = null;
+  focusElement(target);
 }
 
 function stopMedia(stream){
@@ -112,6 +164,10 @@ function stopMedia(stream){
 function cleanupPeer(){
   clearTimeout(callTimeout);
   callTimeout = null;
+  clearTimeout(disconnectTimeout);
+  disconnectTimeout = null;
+  stopDuration();
+  resetMediaControls();
   if (!activeCall) {
     hideCallLayer();
     return;
@@ -129,12 +185,23 @@ function cleanupPeer(){
 }
 
 async function finishCall({ notifyRemote = true, status = 'ended', message = 'Jaň tamamlandy' } = {}){
+  if (endingCall) return;
+  endingCall = true;
   const call = activeCall;
-  if (notifyRemote && call?.ref) {
-    await updateDoc(call.ref, { status, endedAt: serverTimestamp(), updatedAt: serverTimestamp() }).catch(() => {});
+  try {
+    if (notifyRemote && call?.ref) {
+      await updateDoc(call.ref, { status, endedAt: serverTimestamp(), updatedAt: serverTimestamp() }).catch(() => {});
+    }
+    cleanupPeer();
+    if (message) toast(message);
+  } finally {
+    endingCall = false;
   }
-  cleanupPeer();
-  if (message) toast(message);
+}
+
+function serializeCandidate(candidate){
+  const value = candidate.toJSON();
+  return Object.fromEntries(Object.entries(value).filter(([, item]) => item !== null && item !== undefined));
 }
 
 async function flushLocalCandidates(){
@@ -164,14 +231,25 @@ async function flushRemoteCandidates(){
 
 async function preparePeer({ role, ref, recipientId }){
   if (!supportsVideoCall()) throw new Error('Bu brauzer wideoçaty goldamaýar.');
-  const localStream = await navigator.mediaDevices.getUserMedia({
-    audio: { echoCancellation: true, noiseSuppression: true },
-    video: { facingMode: 'user', width: { ideal: 1280 }, height: { ideal: 720 } }
-  });
+  let localStream;
+  try {
+    localStream = await navigator.mediaDevices.getUserMedia({
+      audio: { echoCancellation: true, noiseSuppression: true },
+      video: { facingMode: preferredFacingMode, width: { ideal: 1280 }, height: { ideal: 720 } }
+    });
+  } catch (error) {
+    if (['NotAllowedError', 'SecurityError'].includes(error?.name)) throw new Error('Wideo jaň üçin kamera we mikrofon rugsadyny beriň.');
+    if (error?.name === 'NotFoundError') throw new Error('Kamera ýa-da mikrofon tapylmady.');
+    if (error?.name === 'NotReadableError') throw new Error('Kamera ýa-da mikrofon başga programma tarapyndan ulanylýar.');
+    throw error;
+  }
   const pc = new RTCPeerConnection(iceConfiguration());
   localStream.getTracks().forEach(track => pc.addTrack(track, localStream));
   const localVideo = element('localVideo');
-  if (localVideo) localVideo.srcObject = localStream;
+  if (localVideo) {
+    localVideo.srcObject = localStream;
+    localVideo.classList.toggle('mirrored', preferredFacingMode === 'user');
+  }
 
   activeCall = {
     ...(activeCall || {}),
@@ -195,18 +273,36 @@ async function preparePeer({ role, ref, recipientId }){
   };
   pc.onicecandidate = event => {
     if (!event.candidate || !activeCall) return;
-    const candidate = event.candidate.toJSON();
+    const candidate = serializeCandidate(event.candidate);
     if (!activeCall.signalingReady) activeCall.pendingCandidates.push(candidate);
     else addDoc(collection(activeCall.ref, activeCall.localCandidateCollection), candidate)
       .catch(error => handleError(error, 'ICE kandidaty iberilmedi'));
   };
   pc.onconnectionstatechange = () => {
     const state = pc.connectionState;
-    if (state === 'connected') setCallStatus('Baglanyşyk döredildi');
+    if (state === 'connected') {
+      clearTimeout(disconnectTimeout);
+      disconnectTimeout = null;
+      setCallStatus('Baglanyşyk döredildi');
+      startDuration();
+    }
     else if (state === 'connecting') setCallStatus('Baglanyşýar…');
     else if (state === 'failed') finishCall({ notifyRemote: true, message: 'Wideo baglanyşygy başartmady' });
-    else if (state === 'disconnected') setCallStatus('Baglanyşyk wagtlaýyn kesildi…');
+    else if (state === 'disconnected') {
+      setCallStatus('Baglanyşyk wagtlaýyn kesildi…');
+      clearTimeout(disconnectTimeout);
+      disconnectTimeout = setTimeout(() => {
+        if (pc.connectionState === 'disconnected') finishCall({ notifyRemote: true, message: 'Internet baglanyşygy kesildi' });
+      }, Number(config?.rtc?.disconnectGraceMs) || 12000);
+    }
   };
+  const videoInputs = typeof navigator.mediaDevices.enumerateDevices === 'function'
+    ? await navigator.mediaDevices.enumerateDevices()
+      .then(devices => devices.filter(device => device.kind === 'videoinput').length)
+      .catch(() => 1)
+    : 1;
+  const switchButton = element('switchCallCamera');
+  if (switchButton) switchButton.disabled = videoInputs < 2;
   return pc;
 }
 
@@ -228,14 +324,22 @@ function listenCallDocument(){
   if (!activeCall) return;
   activeCall.callStop?.();
   activeCall.callStop = onSnapshot(activeCall.ref, async snapshot => {
-    if (!snapshot.exists() || !activeCall) return;
+    if (!activeCall) return;
+    if (!snapshot.exists()) {
+      await finishCall({ notifyRemote: false, message: 'Jaň tamamlandy' });
+      return;
+    }
     const data = snapshot.data();
     if (activeCall.role === 'caller' && data.answer && !activeCall.pc.remoteDescription) {
       await activeCall.pc.setRemoteDescription(data.answer);
       await flushRemoteCandidates();
       setCallStatus('Jaň kabul edildi');
     }
-    if (data.status === 'accepted') setCallStatus('Baglanyşýar…');
+    if (data.status === 'accepted') {
+      clearTimeout(callTimeout);
+      callTimeout = null;
+      setCallStatus('Baglanyşýar…');
+    }
     if (data.status === 'declined') await finishCall({ notifyRemote: false, message: 'Jaň kabul edilmedi' });
     if (data.status === 'busy') await finishCall({ notifyRemote: false, message: 'Ulanyjy başga jaňda' });
     if (data.status === 'ended') await finishCall({ notifyRemote: false, message: 'Jaň tamamlandy' });
@@ -244,10 +348,11 @@ function listenCallDocument(){
 
 export async function startVideoCall(){
   if (!runtime.user) throw new Error('Wideoçat üçin Google bilen giriş ediň.');
-  if (activeCall) throw new Error('Başga jaň dowam edýär.');
+  if (activeCall || callStarting) throw new Error('Başga jaň dowam edýär.');
   const chat = bridge.getActiveChat();
   if (!chat?.remote || !chat.recipientId) throw new Error('Wideoçat üçin hakyky ulanyjy çaty saýlaň.');
   const callRef = doc(collection(db, 'calls'));
+  callStarting = true;
   showCallLayer(chat.name || 'Wideoçat', 'Kamera açylýar…');
   try {
     const pc = await preparePeer({ role: 'caller', ref: callRef, recipientId: chat.recipientId });
@@ -278,19 +383,24 @@ export async function startVideoCall(){
   } catch (error) {
     cleanupPeer();
     throw error;
+  } finally {
+    callStarting = false;
   }
 }
 
 async function acceptIncoming(){
-  if (!incomingCall || !runtime.user) return;
+  if (!incomingCall || !runtime.user || acceptingCall) return;
   if (activeCall) {
     await updateDoc(incomingCall.ref, { status: 'busy', endedAt: serverTimestamp(), updatedAt: serverTimestamp() });
     hideIncoming();
     return;
   }
   const { ref, data } = incomingCall;
+  const returnFocus = incomingFocusReturn;
+  acceptingCall = true;
   hideIncoming();
   showCallLayer(profileName(data.callerId), 'Kamera açylýar…');
+  callFocusReturn = returnFocus;
   try {
     const pc = await preparePeer({ role: 'callee', ref, recipientId: data.callerId });
     await pc.setRemoteDescription(data.offer);
@@ -311,6 +421,8 @@ async function acceptIncoming(){
     await updateDoc(ref, { status: 'ended', endedAt: serverTimestamp(), updatedAt: serverTimestamp() }).catch(() => {});
     cleanupPeer();
     throw error;
+  } finally {
+    acceptingCall = false;
   }
 }
 
@@ -327,9 +439,17 @@ function startIncomingListener(){
   incomingStop = onSnapshot(
     query(collection(db, 'calls'), where('calleeId', '==', runtime.user.uid), where('status', '==', 'ringing'), limit(5)),
     snapshot => {
-      const newest = snapshot.docs
-        .map(item => ({ id: item.id, data: item.data() }))
-        .find(item => item.id !== activeCall?.id);
+      const now = Date.now();
+      const maxAge = Number(config?.rtc?.maxCallAgeMs) || ((Number(config?.rtc?.ringTimeoutMs) || 45000) + 15000);
+      const calls = snapshot.docs.map(item => ({ id: item.id, data: item.data(), createdAt: millis(item.data().createdAt) }));
+      calls.filter(item => item.createdAt && now - item.createdAt > maxAge).forEach(item => {
+        updateDoc(doc(db, 'calls', item.id), {
+          status: 'ended', endedAt: serverTimestamp(), updatedAt: serverTimestamp()
+        }).catch(() => {});
+      });
+      const newest = calls
+        .filter(item => (!item.createdAt || now - item.createdAt <= maxAge) && item.id !== activeCall?.id)
+        .sort((left, right) => right.createdAt - left.createdAt)[0];
       if (!newest) {
         if (!activeCall) hideIncoming();
         return;
@@ -356,7 +476,51 @@ function toggleTrack(kind, buttonId){
   track.enabled = !track.enabled;
   const button = element(buttonId);
   button?.classList.toggle('off', !track.enabled);
-  if (button) button.setAttribute('aria-pressed', String(!track.enabled));
+  if (button) {
+    button.setAttribute('aria-pressed', String(!track.enabled));
+    button.setAttribute('aria-label', kind === 'audio'
+      ? track.enabled ? 'Mikrofony ýap' : 'Mikrofony aç'
+      : track.enabled ? 'Kamerany ýap' : 'Kamerany aç');
+  }
+}
+
+function resetMediaControls(){
+  for (const [id, label] of [['toggleCallMic', 'Mikrofony ýap'], ['toggleCallCamera', 'Kamerany ýap']]) {
+    const button = element(id);
+    button?.classList.remove('off');
+    button?.setAttribute('aria-pressed', 'false');
+    button?.setAttribute('aria-label', label);
+  }
+  const switchButton = element('switchCallCamera');
+  if (switchButton) switchButton.disabled = false;
+}
+
+async function switchCamera(){
+  if (!activeCall?.pc || !activeCall.localStream) return;
+  const nextFacingMode = preferredFacingMode === 'user' ? 'environment' : 'user';
+  const stream = await navigator.mediaDevices.getUserMedia({
+    video: { facingMode: { ideal: nextFacingMode }, width: { ideal: 1280 }, height: { ideal: 720 } },
+    audio: false
+  });
+  const nextTrack = stream.getVideoTracks()[0];
+  const sender = activeCall.pc.getSenders().find(item => item.track?.kind === 'video');
+  if (!nextTrack || !sender) {
+    stopMedia(stream);
+    throw new Error('Başga kamera tapylmady.');
+  }
+  const previousTrack = activeCall.localStream.getVideoTracks()[0];
+  await sender.replaceTrack(nextTrack);
+  if (previousTrack) {
+    activeCall.localStream.removeTrack(previousTrack);
+    previousTrack.stop();
+  }
+  activeCall.localStream.addTrack(nextTrack);
+  preferredFacingMode = nextFacingMode;
+  const localVideo = element('localVideo');
+  if (localVideo) {
+    localVideo.srcObject = activeCall.localStream;
+    localVideo.classList.toggle('mirrored', preferredFacingMode === 'user');
+  }
 }
 
 document.addEventListener('click', async event => {
@@ -367,9 +531,17 @@ document.addEventListener('click', async event => {
     else if (event.target.closest('#hangupVideoCall')) await finishCall({ notifyRemote: true });
     else if (event.target.closest('#toggleCallMic')) toggleTrack('audio', 'toggleCallMic');
     else if (event.target.closest('#toggleCallCamera')) toggleTrack('video', 'toggleCallCamera');
+    else if (event.target.closest('#switchCallCamera')) await switchCamera();
   } catch (error) {
     handleError(error, 'Wideoçat başartmady');
     toast(error.message || 'Wideoçat başartmady');
+  }
+});
+
+document.addEventListener('keydown', event => {
+  if (event.key === 'Escape' && incomingCall && !incomingLayer()?.classList.contains('hidden')) {
+    event.preventDefault();
+    declineIncoming().catch(error => handleError(error, 'Jaň ret edilmedi'));
   }
 });
 
