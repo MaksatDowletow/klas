@@ -7,6 +7,7 @@
   <meta name="theme-color" content="#2563eb" />
   <title>Klas — Mekdep jemgyýeti</title>
   <link rel="stylesheet" href="klas-v4.css?v=20260721" />
+  <link rel="stylesheet" href="klas-backend.css?v=20260722" />
 </head>
 <body>
   <header class="topbar">
@@ -20,6 +21,8 @@
         <div class="search-results hidden" id="searchResults"></div>
       </div>
       <div class="top-actions">
+        <span class="backend-status" id="backendStatus">Firebase başlanýar…</span>
+        <button class="auth-btn" id="authBtn" type="button">Google bilen giriş</button>
         <button aria-label="Tema" class="icon-btn" id="themeBtn">🌙</button>
         <button aria-label="Bildirişler" class="icon-btn" data-page="notifications">🔔<span class="badge" id="noticeBadge">3</span></button>
         <button aria-label="Habarlar" class="icon-btn" data-page="messages">💬<span class="badge secondary-badge hidden" id="messageBadge">0</span></button>
@@ -99,8 +102,10 @@
       <section class="page card page-card" id="page-notifications"><div class="page-head"><div><h1>Bildirişler</h1><p>Täze habarlar we jemgyýet hereketleri.</p></div><button class="secondary" id="readAll">Ählisini okalan et</button></div><div class="stack" id="notifications"></div></section>
 
       <section class="page card page-card" id="page-settings">
-        <div class="page-head"><div><h1>Sazlamalar</h1><p>Profil, gizlinlik we ýerli maglumat dolandyryşy.</p></div><button class="primary" id="editProfileBtn">Profili üýtget</button></div>
+        <div class="page-head"><div><h1>Sazlamalar</h1><p>Profil, gizlinlik, backend we maglumat dolandyryşy.</p></div><button class="primary" id="editProfileBtn">Profili üýtget</button></div>
+        <div class="sync-note"><span>☁️</span><div><b>Hybrid backend</b><small>Google girişden soň Firebase/Firestore ulanylýar. Giriş ýok ýa-da backend elýetersiz bolsa ýerli režim dowam edýär.</small></div></div>
         <div class="profile-summary"><img class="profile-large" id="profileAvatar" alt="Profil"/><div><h2 id="profileName"></h2><p id="profileBio"></p><small id="profileMeta"></small></div></div>
+        <div class="settings-row"><div><b>Cloudinary media</b><small>Surat we wideo üçin unsigned browser upload sazlamasy</small><span class="cloudinary-state missing" id="cloudinaryState">Cloud name girizilmedik</span></div><button class="secondary" id="configureCloudinaryBtn">Sazla</button></div>
         <div class="settings-row"><div><b>Bildirişler</b><small>Täze habarlar barada duýduryş al</small></div><button class="switch on" id="notifySwitch"><span></span></button></div>
         <div class="settings-row"><div><b>Profiliň görünmegi</b><small>Maglumatlaryňyzy kim görüp biler</small></div><select id="privacy"><option value="classmates">Diňe synpdaşlar</option><option value="school">Mekdep agzalary</option><option value="public">Hemmeler</option></select></div>
         <div class="settings-row"><div><b>Garaňky tema</b><small>Göz üçin amatly garaňky görnüş</small></div><button class="switch" id="darkSwitch"><span></span></button></div>
@@ -121,9 +126,12 @@
   <div class="lightbox" id="lightbox"><button class="lightbox-close" id="lightboxClose">✕</button><div id="lightboxContent"></div></div>
   <div class="toast" id="toast" role="status"></div>
   <input class="hidden" type="file" id="hiddenImageInput" accept="image/*"/>
+  <script src="klas-config.js?v=20260722"></script>
   <script src="klas-v4-1.js?v=20260721"></script>
   <script src="klas-v4-2.js?v=20260721"></script>
   <script src="klas-v4-3.js?v=20260721"></script>
   <script src="klas-v4-4.js?v=20260721"></script>
+  <script src="klas-bridge.js?v=20260722"></script>
+  <script type="module" src="klas-backend-ui.js?v=20260722"></script>
 </body>
 </html>
