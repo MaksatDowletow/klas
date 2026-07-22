@@ -1,4 +1,4 @@
-name: Deploy Klas to GitHub Pages
+name: Deploy Klas Dynamic App to GitHub Pages
 
 on:
   push:
@@ -23,7 +23,65 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v4
+
+      - name: Validate dynamic runtime
+        shell: bash
+        run: |
+          set -euo pipefail
+          required=(
+            index.html
+            klas-v4.css
+            klas-backend.css
+            klas-v4-1.js
+            klas-v4-2.js
+            klas-v4-3.js
+            klas-v4-4.js
+            klas-bridge.js
+            klas-config.js
+            klas-backend-bootstrap.js
+            klas-backend-core.js
+            klas-backend-ui.js
+            klas-backend-chat.js
+            klas-backend-video.js
+            klas-backend-realtime.js
+          )
+          for file in "${required[@]}"; do
+            test -s "$file" || { echo "Missing required runtime file: $file"; exit 1; }
+          done
+          grep -q "klas-backend-bootstrap.js" index.html
+          grep -q "klas-backend-realtime.js" klas-backend-bootstrap.js
+          node --check klas-v4-1.js
+          node --check klas-v4-2.js
+          node --check klas-v4-3.js
+          node --check klas-v4-4.js
+          node --check klas-bridge.js
+          node --check klas-config.js
+
+      - name: Build clean Pages artifact
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf _site
+          mkdir -p _site
+          find . -maxdepth 1 -type f \( \
+            -name '*.html' -o \
+            -name 'klas-*.js' -o \
+            -name 'klas-*.css' -o \
+            -name 'health.json' \
+          \) -exec cp '{}' _site/ \;
+          touch _site/.nojekyll
+          cat > _site/release.json <<EOF
+          {
+            "app": "Klas",
+            "version": "5.2.0",
+            "commit": "${GITHUB_SHA}",
+            "dynamicPages": true,
+            "realtimeComments": true
+          }
+          EOF
+          test -s _site/index.html
+          test -s _site/klas-backend-realtime.js
 
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5
@@ -31,7 +89,7 @@ jobs:
       - name: Upload static site artifact
         uses: actions/upload-pages-artifact@v4
         with:
-          path: .
+          path: _site
 
       - name: Deploy to GitHub Pages
         id: deployment

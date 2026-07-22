@@ -1,0 +1,16 @@
+<!doctype html>
+<html lang="tk">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="robots" content="noindex">
+  <title>Klas — ugrukdyrylýar</title>
+</head>
+<body>
+  <p>Klas baş sahypasyna ugrukdyrylýar…</p>
+  <script>
+    const base = location.pathname.toLowerCase().includes('/klas/') ? location.pathname.split('/').slice(0, 2).join('/') + '/' : './';
+    location.replace(`${base}${location.search}#${(location.hash || '#feed').slice(1)}`);
+  </script>
+</body>
+</html>

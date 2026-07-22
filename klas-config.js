@@ -27,8 +27,10 @@ window.KLAS_CONFIG = Object.freeze({
     ringTimeoutMs: 45000
   }),
   app: Object.freeze({
-    version: '5.1.0',
+    version: '5.2.0',
     firebaseSdkVersion: '12.16.0',
-    allowLocalFallback: true
+    allowLocalFallback: true,
+    dynamicPages: true,
+    realtimeComments: true
   })
 });

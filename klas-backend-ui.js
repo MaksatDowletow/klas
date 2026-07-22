@@ -1,5 +1,5 @@
 import { runtime, bridge, $, safe, toast, login, logout, cloudConfig, cloudReady, saveCloudConfig, updateCloudState, uploadMedia, saveProfile, createPost, toggleLike, addComment, deletePost } from './klas-backend-core.js';
-import { ensureConversation, sendMessage } from './klas-backend-chat.js?v=20260722-live1';
+import { ensureConversation, sendMessage } from './klas-backend-chat.js';
 import { createGroup, toggleGroup, deleteGroup, createEvent, toggleEvent, deleteEvent, createMedia, deleteMedia, createStory, deleteStory } from './klas-backend-community.js';
 import { toggleFriendship, notifyPostAuthor, markRead, markAllRead } from './klas-backend-notifications.js';
 

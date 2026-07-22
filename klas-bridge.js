@@ -4,8 +4,26 @@
   const COLLECTION_KEYS = ['stories','posts','people','groups','chats','notifications','media','events'];
   const deepClone = value => JSON.parse(JSON.stringify(value));
   const localOnly = items => (Array.isArray(items) ? items.filter(item => !item?.remote) : []);
+  const pendingCollections = new Set();
+  const scheduleFrame = window.requestAnimationFrame || (callback => setTimeout(callback, 0));
   let cloudMode = false;
   let localSnapshot = null;
+  let revision = 0;
+  let changeFrame = 0;
+
+  function signal(collection){
+    pendingCollections.add(collection);
+    if(changeFrame) return;
+    changeFrame = scheduleFrame(() => {
+      changeFrame = 0;
+      revision += 1;
+      const collections = [...pendingCollections];
+      pendingCollections.clear();
+      window.dispatchEvent(new CustomEvent('klas:statechange', {
+        detail: { revision, collections, cloudMode }
+      }));
+    });
+  }
 
   const render = () => {
     if (typeof renderEverything === 'function') renderEverything();
@@ -30,6 +48,7 @@
   function setCollection(name, remoteItems){
     const remote = Array.isArray(remoteItems) ? remoteItems : [];
     state[name] = cloudMode ? [...remote] : [...remote, ...localOnly(state[name])];
+    signal(name);
   }
 
   function renderPeopleRelated(){
@@ -41,6 +60,7 @@
 
   window.KlasBridge = Object.freeze({
     isCloudMode: () => cloudMode,
+    getRevision: () => revision,
     getState: () => deepClone(state),
     getCurrentUser: () => deepClone(state.currentUser),
     getPost: id => deepClone(state.posts.find(item => item.id === id) || null),
@@ -69,6 +89,7 @@
         }
       }
       render();
+      signal('all');
     },
 
     setActiveChat(id){
@@ -76,6 +97,7 @@
       if (!cloudMode && typeof save === 'function') save();
       if (typeof renderChats === 'function') renderChats();
       if (typeof renderMessages === 'function') renderMessages();
+      signal('chats');
     },
 
     setCurrentUser(profile){
@@ -109,6 +131,7 @@
       });
       if (!cloudMode && typeof save === 'function') save();
       render();
+      signal('currentUser');
     },
 
     mergeRemotePosts(remotePosts){
@@ -121,6 +144,7 @@
         Object.assign(post, patch);
         if (!post.remote && !cloudMode && typeof save === 'function') save();
         if (typeof renderAllPosts === 'function') renderAllPosts();
+        signal('posts');
       }
     },
     mergeRemotePeople(remotePeople){
@@ -133,6 +157,7 @@
         Object.assign(person, patch);
         if (!person.remote && !cloudMode && typeof save === 'function') save();
         renderPeopleRelated();
+        signal('people');
       }
     },
     setPeopleStatuses(statuses){
@@ -141,6 +166,7 @@
         if (person.remote) person.status = map[person.uid || person.id] || 'none';
       });
       renderPeopleRelated();
+      signal('people');
     },
     mergeRemoteChats(remoteChats){
       const active = state.activeChat;
@@ -177,6 +203,7 @@
       addNotification(text, icon, page);
       save();
       if (typeof renderNotifications === 'function') renderNotifications();
+      signal('notifications');
     },
     toast: text => toast(text),
     openModal: options => openModal(options),
