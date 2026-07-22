@@ -17,7 +17,7 @@ Frontend resmi Firebase CDN-den Firebase JS SDK 12.16.0 ulanýar.
 1. **Authentication → Sign-in method → Google** provider-i işjeňleşdiriň.
 2. Email/password, telefon, anonymous we beýleki provider-leri öçürilen ýagdaýda saklaň: Klas diňe Google girişini goldaýar.
 3. `maksatdowletow.github.io` domenini Authentication authorized domains sanawyna goşuň. `/klas/` ýoluny domen hökmünde goşmaň.
-4. OAuth redirect handler `https://project-789b5025-7a3c-4b74-88b.firebaseapp.com/__/auth/handler` bolmaly.
+4. Klas Google girişini `signInWithPopup()` arkaly tamamlaýar; GitHub Pages bilen cross-origin redirect ulanylmaýar.
 5. Cloud Firestore dörediň.
 6. Repository-däki `firestore.rules` we `firestore.indexes.json` faýllaryny deploy ediň.
 
@@ -32,11 +32,13 @@ Ulanyjy çykanda ýa-da Firebase elýetersiz bolanda programma ýerli `localStor
 ### Google-only akkaunt akymy
 
 - **Giriş / akkaunt döret** şol bir Google federated akymydyr. Ilkinji üstünlikli girişde Firebase Auth ulanyjysy awtomatik döredilýär.
+- Google penjiresi desktop we mobil brauzerlerde popup görnüşinde açylýar. Popup bloklanan bolsa, brauzerde şu saýt üçin popup rugsadyny açmaly.
 - `users/{uid}` private akkaunt ýazgysynda e-poçta, Google provider, rol, status, onboarding we login wagty saklanýar.
 - `profiles/{uid}` diňe agzalara görünýän jemgyýet profili bolup, e-poçta saklamaýar.
 - täze agza `role: user`, `status: active`, `onboardingComplete: false` bilen döredilýär; onboarding gutaranda diňe rugsatly profil meýdanlary täzelenýär.
 - client rol/status ýokarlandyryp bilmeýär. Bloklanan agza Firestore jemgyýet maglumatlaryny okap ýa-da ýazyp bilmeýär.
 - Firestore Rules `request.auth.token.firebase.sign_in_provider == 'google.com'` şertini server tarapynda hem barlaýar.
+- Öňki Klas wersiýasyndan galan `pending` ýa-da doly bolmadyk akkaunt/profil ýazgylary ilkinji Google girişinde howpsuz görnüşde täze schema geçirilýär; `blocked` ýagdaý hiç wagt awtomatik açylmaýar.
 
 Production üçin Firebase App Check-i aýratyn açmak we Google Cloud API key-ni `maksatdowletow.github.io` HTTP referrer-i hem-de gerekli Firebase API-lary bilen çäklendirmek maslahat berilýär. API key public web config-dir; service-account açary ýa-da başga secret repository-ä goýulmaly däl.
 

@@ -145,16 +145,20 @@ service cloud.firestore {
         && request.resource.data.createdAt == request.time
         && request.resource.data.lastLogin == request.time;
       allow update: if (isSelf(uid)
-        && request.resource.data.uid == resource.data.uid
+        && request.resource.data.uid == request.auth.uid
         && request.resource.data.email == request.auth.token.email
         && request.resource.data.get('authProvider', '') == 'google.com'
-        && request.resource.data.get('role', 'user') == resource.data.get('role', 'user')
-        && request.resource.data.get('status', 'active') == resource.data.get('status', 'active')
+        && (request.resource.data.get('role', 'user') == resource.data.get('role', 'user')
+          || (!resource.data.keys().hasAny(['role'])
+            && request.resource.data.get('role', 'user') == 'user'))
+        && (request.resource.data.get('status', 'active') == resource.data.get('status', 'active')
+          || (resource.data.get('status', 'pending') == 'pending'
+            && request.resource.data.get('status', '') == 'active'))
         && request.resource.data.get('onboardingComplete', false) is bool
         && (!resource.data.get('onboardingComplete', false)
           || request.resource.data.get('onboardingComplete', false) == true)
         && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
-          'email', 'displayName', 'photoURL', 'authProvider', 'lastLogin',
+          'uid', 'email', 'displayName', 'photoURL', 'authProvider', 'role', 'status', 'lastLogin',
           'onboardingComplete', 'acceptedCommunityRulesAt', 'updatedAt'
         ]))
         || (isAdmin() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['role', 'status', 'updatedAt']));
@@ -168,11 +172,12 @@ service cloud.firestore {
         && !request.resource.data.keys().hasAny(['role', 'status', 'admin', 'email'])
         && validProfileData(request.resource.data, uid);
       allow update: if isProvisionedMember() && isSelf(uid)
-        && request.resource.data.uid == resource.data.uid
+        && request.resource.data.uid == request.auth.uid
         && !request.resource.data.keys().hasAny(['role', 'status', 'admin', 'email'])
         && validProfileData(request.resource.data, uid)
         && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
-          'fullName', 'shortName', 'email', 'avatarURL', 'city', 'bio', 'school',
+          'uid', 'fullName', 'shortName', 'email', 'role', 'status', 'admin',
+          'avatarURL', 'city', 'bio', 'school',
           'graduationYear', 'profession', 'online', 'lastSeen', 'updatedAt'
         ]);
       allow delete: if isAdmin();
