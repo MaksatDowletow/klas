@@ -1,11 +1,78 @@
-import { collection, doc, setDoc, onSnapshot, query, where, orderBy, limit, serverTimestamp, writeBatch } from 'https://www.gstatic.com/firebasejs/12.16.0/firebase-firestore.js';
+import { collection, doc, getDoc, setDoc, onSnapshot, query, where, orderBy, limit, serverTimestamp, writeBatch } from 'https://www.gstatic.com/firebasejs/12.16.0/firebase-firestore.js';
 import { db, runtime, bridge, handleError, timeLabel } from './klas-backend-core.js';
 import { createNotification } from './klas-backend-notifications.js';
-const messageStops=new Map();let conversationStop=null;const remoteChats=new Map();
-function info(data){const other=(data.participants||[]).find(id=>id!==runtime.user?.uid),p=runtime.profiles.get(other)||{};return{other,name:p.fullName||data.title||'Klas çat',avatar:p.avatarURL||''}}
-export async function ensureConversation(target){if(!runtime.user)throw new Error('Giriş gerek.');const ids=[runtime.user.uid,target].sort(),id=`direct_${ids.join('_')}`;await setDoc(doc(db,'conversations',id),{type:'direct',participants:ids,createdAt:serverTimestamp(),updatedAt:serverTimestamp(),lastMessage:''},{merge:true});bridge.setActiveChat(id);return id;}
-export async function sendMessage(id,text){if(!runtime.user)throw new Error('Giriş gerek.');const c=doc(db,'conversations',id),m=doc(collection(c,'messages')),batch=writeBatch(db);batch.set(m,{senderId:runtime.user.uid,text,createdAt:serverTimestamp(),seenBy:[runtime.user.uid]});batch.set(c,{lastMessage:text,updatedAt:serverTimestamp()},{merge:true});await batch.commit();const recipient=bridge.getChat(id)?.recipientId;if(recipient)await createNotification(recipient,'message',`${runtime.profile?.shortName||'Bir ulanyjy'} size habar iberdi`,'💬','messages',id);}
-function watchMessages(id,data){messageStops.get(id)?.();const stop=onSnapshot(query(collection(db,'conversations',id,'messages'),orderBy('createdAt','asc'),limit(200)),snap=>{const i=info(data),messages=snap.docs.map(x=>({id:x.id,from:x.data().senderId===runtime.user.uid?'me':'them',text:x.data().text||'',time:timeLabel(x.data().createdAt)}));remoteChats.set(id,{id,remote:true,recipientId:i.other,name:i.name,avatar:i.avatar,preview:data.lastMessage||messages.at(-1)?.text||'Täze çat',unread:0,messages});bridge.mergeRemoteChats([...remoteChats.values()])},e=>handleError(e,'Habarlar ýüklenmedi'));messageStops.set(id,stop)}
-function start(){stop();if(!runtime.user)return;conversationStop=onSnapshot(query(collection(db,'conversations'),where('participants','array-contains',runtime.user.uid),limit(50)),snap=>{const ids=new Set();snap.docs.forEach(x=>{ids.add(x.id);watchMessages(x.id,x.data())});for(const [id,s] of messageStops)if(!ids.has(id)){s();messageStops.delete(id);remoteChats.delete(id)}},e=>handleError(e,'Çatlar ýüklenmedi'))}
-function stop(){conversationStop?.();conversationStop=null;for(const s of messageStops.values())s();messageStops.clear();remoteChats.clear();bridge.mergeRemoteChats([])}
-window.addEventListener('klas-auth',e=>e.detail.user?start():stop());
+
+const messageStops = new Map();
+let conversationStop = null;
+const remoteChats = new Map();
+
+function info(data) {
+  const other = (data.participants || []).find(id => id !== runtime.user?.uid);
+  const profile = runtime.profiles.get(other) || {};
+  return { other, name: profile.fullName || data.title || 'Klas çat', avatar: profile.avatarURL || '' };
+}
+
+export async function ensureConversation(targetUid) {
+  if (!runtime.user) throw new Error('Giriş gerek.');
+  if (!targetUid || targetUid === runtime.user.uid) throw new Error('Çat üçin başga ulanyjy saýlaň.');
+  const participants = [runtime.user.uid, targetUid].sort();
+  const id = `direct_${participants.join('_')}`;
+  const reference = doc(db, 'conversations', id);
+  const snapshot = await getDoc(reference);
+  if (!snapshot.exists()) {
+    await setDoc(reference, {
+      type: 'direct', participants, createdAt: serverTimestamp(), updatedAt: serverTimestamp(), lastMessage: ''
+    });
+  }
+  bridge.setActiveChat(id);
+  return id;
+}
+
+export async function sendMessage(id, text) {
+  if (!runtime.user) throw new Error('Giriş gerek.');
+  const clean = String(text || '').trim();
+  if (!clean) return;
+  if (clean.length > 4000) throw new Error('Habar 4000 belgiden uzyn bolmaly däl.');
+  const conversationRef = doc(db, 'conversations', id);
+  const conversationSnap = await getDoc(conversationRef);
+  if (!conversationSnap.exists() || !(conversationSnap.data().participants || []).includes(runtime.user.uid)) throw new Error('Bu çata rugsat ýok.');
+  const messageRef = doc(collection(conversationRef, 'messages'));
+  const batch = writeBatch(db);
+  batch.set(messageRef, { senderId: runtime.user.uid, text: clean, createdAt: serverTimestamp(), seenBy: [runtime.user.uid] });
+  batch.update(conversationRef, { lastMessage: clean, updatedAt: serverTimestamp() });
+  await batch.commit();
+  const recipient = (conversationSnap.data().participants || []).find(uid => uid !== runtime.user.uid);
+  if (recipient) await createNotification(recipient, 'message', `${runtime.profile?.shortName || 'Bir ulanyjy'} size habar iberdi`, '💬', 'messages', id);
+}
+
+function watchMessages(id, data) {
+  messageStops.get(id)?.();
+  const stop = onSnapshot(query(collection(db, 'conversations', id, 'messages'), orderBy('createdAt', 'asc'), limit(200)), snapshot => {
+    const details = info(data);
+    const messages = snapshot.docs.map(item => ({ id: item.id, from: item.data().senderId === runtime.user.uid ? 'me' : 'them', text: item.data().text || '', time: timeLabel(item.data().createdAt) }));
+    remoteChats.set(id, { id, remote: true, recipientId: details.other, name: details.name, avatar: details.avatar, preview: data.lastMessage || messages.at(-1)?.text || 'Täze çat', unread: 0, messages });
+    bridge.mergeRemoteChats([...remoteChats.values()]);
+  }, error => handleError(error, 'Habarlar ýüklenmedi'));
+  messageStops.set(id, stop);
+}
+
+function start() {
+  stop();
+  if (!runtime.user) return;
+  conversationStop = onSnapshot(query(collection(db, 'conversations'), where('participants', 'array-contains', runtime.user.uid), limit(50)), snapshot => {
+    const ids = new Set();
+    snapshot.docs.forEach(item => { ids.add(item.id); watchMessages(item.id, item.data()); });
+    for (const [id, unsubscribe] of messageStops) {
+      if (!ids.has(id)) { unsubscribe(); messageStops.delete(id); remoteChats.delete(id); }
+    }
+  }, error => handleError(error, 'Çatlar ýüklenmedi'));
+}
+function stop() {
+  conversationStop?.();
+  conversationStop = null;
+  for (const unsubscribe of messageStops.values()) unsubscribe();
+  messageStops.clear();
+  remoteChats.clear();
+  bridge.mergeRemoteChats([]);
+}
+window.addEventListener('klas-auth', event => event.detail.user ? start() : stop());
