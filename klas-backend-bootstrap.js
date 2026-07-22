@@ -1,5 +1,5 @@
 const statusNode = document.getElementById('backendStatus');
-const release = '20260722-live1';
+const release = '20260722-dynamic1';
 const styleHref = `klas-livechat.css?v=${release}`;
 if (![...document.styleSheets].some(sheet => sheet.href?.includes('klas-livechat.css'))) {
   const link = document.createElement('link');
@@ -10,6 +10,7 @@ if (![...document.styleSheets].some(sheet => sheet.href?.includes('klas-livechat
 try {
   await import(`./klas-backend-ui.js?v=${release}`);
   await import(`./klas-backend-video.js?v=${release}`);
+  await import(`./klas-backend-realtime.js?v=${release}`);
 } catch (error) {
   console.error('Klas backend başlangyjy başartmady', error);
   window.KlasBridge?.setCloudMode(false);
