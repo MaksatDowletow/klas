@@ -21,9 +21,9 @@
   <link rel="icon" href="./assets/icons/klas-icon.svg" type="image/svg+xml" />
   <link rel="apple-touch-icon" href="./assets/icons/klas-180.png" />
   <title>Klas — Mekdep jemgyýeti</title>
-  <link rel="stylesheet" href="./klas-v4.css?v=20260723-responsive1" />
-  <link rel="stylesheet" href="./klas-backend.css?v=20260723-responsive1" />
-  <link rel="stylesheet" href="./klas-livechat.css?v=20260723-responsive1" />
+  <link rel="stylesheet" href="./klas-v4.css?v=20260723-auth1" />
+  <link rel="stylesheet" href="./klas-backend.css?v=20260723-auth1" />
+  <link rel="stylesheet" href="./klas-livechat.css?v=20260723-auth1" />
 </head>
 <body>
   <a class="skip-link" href="#mainContent">Esasy mazmuna geç</a>
@@ -40,7 +40,7 @@
       </div>
       <div class="top-actions">
         <span class="backend-status" id="backendStatus" role="status" aria-live="polite">Ýerli režim taýýarlanýar…</span>
-        <button class="auth-btn" id="authBtn" type="button">Google bilen giriş</button>
+        <button class="auth-btn" id="authBtn" type="button" aria-label="Google bilen giriş ýa-da akkaunt döretmek" aria-busy="false">Google giriş</button>
         <button type="button" class="icon-btn mobile-search-toggle" id="mobileSearchBtn" aria-label="Gözlegi aç" aria-controls="searchInput" aria-expanded="false">⌕</button>
         <button type="button" class="icon-btn" id="pwaInstallTopBtn" hidden aria-label="Klas-y programma hökmünde gur">⬇️</button>
         <button type="button" aria-label="Tema" class="icon-btn" id="themeBtn">🌙</button>
@@ -126,6 +126,7 @@
         <div class="page-head"><div><h1>Sazlamalar</h1><p>Profil, gizlinlik, backend we maglumat dolandyryşy.</p></div><button type="button" class="primary" id="editProfileBtn">Profili üýtget</button></div>
         <div class="sync-note"><span>☁️</span><div><b>Hybrid backend</b><small>Google girişden soň diňe Firebase/Firestore maglumatlary görkezilýär. Giriş ýok ýa-da backend elýetersiz bolsa ýerli režim dowam edýär.</small></div></div>
         <div class="profile-summary"><img class="profile-large" id="profileAvatar" src="https://i.pravatar.cc/100?img=12" alt="Profil"><div><h2 id="profileName">Klas ulanyjysy</h2><p id="profileBio"></p><small id="profileMeta"></small></div></div>
+        <div class="settings-row account-row"><div><b id="accountStateTitle">Google akkaunty</b><small id="accountStateText" role="status" aria-live="polite">Ilkinji Google girişinde Klas akkaunty awtomatik döredilýär.</small></div><button type="button" class="secondary" id="accountActionBtn" data-account-action="login">Giriş / akkaunt</button></div>
         <div class="settings-row"><div><b>Cloudinary media</b><small>Surat we wideo üçin unsigned browser upload sazlamasy</small><span class="cloudinary-state missing" id="cloudinaryState">Cloud Name girizilmedik</span></div><button type="button" class="secondary" id="configureCloudinaryBtn">Sazla</button></div>
         <div class="settings-row"><div><b>Ýerli bildirişler</b><small>Girişsiz demo režimindäki brauzer bildirişlerini dolandyrýar</small></div><button class="switch on" id="notifySwitch" type="button" role="switch" aria-label="Ýerli bildirişler" aria-checked="true"><span></span></button></div>
         <div class="settings-row"><div><b>Profiliň görünmegi</b><small>Häzirki wagtda profiller diňe Google bilen giriş eden Klas agzalaryna görünýär</small></div><select id="privacy" aria-label="Profiliň görünmegi" disabled><option value="school">Klas agzalary</option></select></div>
@@ -144,18 +145,18 @@
     </aside>
   </div>
 
-  <div class="modal" id="appModal"><div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="modalTitle" tabindex="-1"><div class="modal-head"><h2 id="modalTitle">Penjire</h2><button class="close" id="modalClose" type="button" aria-label="Penjiräni ýap">✕</button></div><div id="modalBody"></div><div class="modal-footer" id="modalFooter"></div></div></div>
+  <div class="modal" id="appModal" aria-hidden="true"><div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="modalTitle" tabindex="-1"><div class="modal-head"><h2 id="modalTitle">Penjire</h2><button class="close" id="modalClose" type="button" aria-label="Penjiräni ýap">✕</button></div><div id="modalBody"></div><div class="modal-footer" id="modalFooter"></div></div></div>
   <div class="lightbox" id="lightbox"><div class="lightbox-dialog" role="dialog" aria-modal="true" aria-label="Media görnüşi" tabindex="-1"><button class="lightbox-close" id="lightboxClose" type="button" aria-label="Media görnüşini ýap">✕</button><div id="lightboxContent"></div></div></div>
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
   <input class="hidden" type="file" id="hiddenImageInput" accept="image/*"/>
   <noscript>Bu programma üçin JavaScript işjeň bolmaly.</noscript>
-  <script src="./klas-config.js?v=20260723-responsive1"></script>
-  <script src="./klas-v4-1.js?v=20260723-responsive1"></script>
-  <script src="./klas-v4-2.js?v=20260723-responsive1"></script>
-  <script src="./klas-v4-3.js?v=20260723-responsive1"></script>
-  <script src="./klas-v4-4.js?v=20260723-responsive1"></script>
-  <script src="./klas-bridge.js?v=20260723-responsive1"></script>
-  <script src="./klas-pwa.js?v=20260723-responsive1"></script>
-  <script type="module" src="./klas-backend-bootstrap.js?v=20260723-responsive1"></script>
+  <script src="./klas-config.js?v=20260723-auth1"></script>
+  <script src="./klas-v4-1.js?v=20260723-auth1"></script>
+  <script src="./klas-v4-2.js?v=20260723-auth1"></script>
+  <script src="./klas-v4-3.js?v=20260723-auth1"></script>
+  <script src="./klas-v4-4.js?v=20260723-auth1"></script>
+  <script src="./klas-bridge.js?v=20260723-auth1"></script>
+  <script src="./klas-pwa.js?v=20260723-auth1"></script>
+  <script type="module" src="./klas-backend-bootstrap.js?v=20260723-auth1"></script>
 </body>
 </html>

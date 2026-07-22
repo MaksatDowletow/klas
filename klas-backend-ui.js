@@ -1,10 +1,117 @@
-import { runtime, bridge, $, safe, toast, login, logout, cloudConfig, cloudReady, saveCloudConfig, updateCloudState, uploadMedia, saveProfile, createPost, toggleLike, addComment, deletePost } from './klas-backend-core.js';
+import { runtime, bridge, $, safe, toast, login, logout, authErrorMessage, cloudConfig, cloudReady, saveCloudConfig, updateCloudState, uploadMedia, saveProfile, completeOnboarding, createPost, toggleLike, addComment, deletePost } from './klas-backend-core.js';
 import { ensureConversation, sendMessage } from './klas-backend-chat.js';
 import { createGroup, toggleGroup, deleteGroup, createEvent, toggleEvent, deleteEvent, createMedia, deleteMedia, createStory, deleteStory } from './klas-backend-community.js';
 import { toggleFriendship, notifyPostAuthor, markRead, markAllRead } from './klas-backend-notifications.js';
 
 function modal(o){bridge.openModal(o)}
 function cloudSettings(){const c=cloudConfig();modal({title:'Cloudinary sazlamasy',confirmText:'Sakla',body:`<div class="backend-modal-status">Diňe Cloud Name we Unsigned Upload Preset gerek. API Secret açyk koda goýulmaýar.</div><div class="form-grid"><div class="field"><label>Cloud Name</label><input id="cloudNameInput" value="${safe(c.cloudName||'')}"></div><div class="field"><label>Unsigned Upload Preset</label><input id="cloudPresetInput" value="${safe(c.uploadPreset||'klas_unsigned')}"></div></div>`,onConfirm:()=>{const n=$('#cloudNameInput').value.trim(),p=$('#cloudPresetInput').value.trim();if(!n||!p)throw new Error('Iki meýdan hem hökmany.');saveCloudConfig(n,p);bridge.closeModal();toast('Cloudinary sazlandy')}})}
+
+function authIdentity(){
+  const user=runtime.user;
+  if(!user)return '';
+  return `<div class="auth-identity">${user.photoURL?`<img src="${safe(user.photoURL)}" alt="">`:'<span class="google-mark" aria-hidden="true">G</span>'}<span><b>${safe(user.displayName||'Google ulanyjysy')}</b><small>${safe(user.email||'Google akkaunty')}</small></span></div>`;
+}
+
+function updateAccountPanel(){
+  const title=$('#accountStateTitle'),text=$('#accountStateText'),button=$('#accountActionBtn');
+  if(!title||!text||!button)return;
+  if(!runtime.user){
+    title.textContent='Google akkaunty';
+    text.textContent='Ilkinji Google girişinde Klas akkaunty awtomatik döredilýär.';
+    button.textContent='Giriş / akkaunt';
+    button.dataset.accountAction='login';
+    return;
+  }
+  const incomplete=runtime.account?.onboardingComplete===false;
+  title.textContent=incomplete?'Akkaunty tamamlaň':'Akkaunt işjeň';
+  text.textContent=incomplete
+    ? `${runtime.user.email||'Google akkaunty'} · profil maglumatlaryny tassyklaň.`
+    : `${runtime.user.email||'Google akkaunty'} · sessiýa bu enjamda howpsuz saklanýar.`;
+  button.textContent=incomplete?'Tamamla':'Profili dolandyr';
+  button.dataset.accountAction=incomplete?'onboarding':'profile';
+}
+
+function authDialog(){
+  modal({
+    title:'Giriş ýa-da akkaunt döret',
+    confirmText:'Google bilen dowam et',
+    cancelText:'Häzir däl',
+    body:`<div class="auth-welcome"><div class="google-mark" aria-hidden="true">G</div><div><h3>Klas-a Google bilen goşulyň</h3><p>Ilkinji girişde Klas akkauntyňyz awtomatik döredilýär. Google parolyňyz Klas-a berilmeýär.</p></div></div><ul class="auth-points"><li>Diňe adyňyz, e-poçtaňyz we Google profil suratyňyz ulanylýar.</li><li>Profil diňe giriş eden Klas agzalaryna görünýär.</li><li>Giriş ýok wagty ýerli demo maglumatlary aýratyn saklanýar.</li></ul><label class="auth-consent"><input id="authConsent" type="checkbox"> <span><a href="./privacy.html" target="_blank" rel="noopener noreferrer">Gizlinlik we jemgyýet düzgünlerini</a> okadym; profil maglumatlarymyň agzalara görünmegine razy.</span></label>`,
+    onConfirm:async button=>{
+      if(!$('#authConsent')?.checked)throw new Error('Dowam etmek üçin jemgyýet düzgünlerini kabul ediň.');
+      button.disabled=true;
+      button.setAttribute('aria-busy','true');
+      button.textContent='Google açylýar…';
+      try{
+        await login();
+        bridge.closeModal();
+      }catch(error){
+        button.disabled=false;
+        button.setAttribute('aria-busy','false');
+        button.textContent='Google bilen dowam et';
+        throw new Error(authErrorMessage(error));
+      }
+    }
+  });
+}
+
+function onboardingDialog(){
+  if(!runtime.user)return authDialog();
+  const profile=runtime.profile||{};
+  modal({
+    title:'Klas akkauntyňyzy tamamlaň',
+    confirmText:'Akkaunty tamamla',
+    cancelText:'Soňkyra',
+    body:`${authIdentity()}<div class="backend-modal-status">Google barlagy üstünlikli geçdi. Jemgyýetde görünjek maglumatlaryňyzy tassyklaň.</div><div class="form-grid"><div class="field"><label for="onboardName">Doly ady</label><input id="onboardName" maxlength="100" autocomplete="name" value="${safe(profile.fullName||runtime.user.displayName||'')}" required></div><div class="form-grid two"><div class="field"><label for="onboardCity">Şäher</label><input id="onboardCity" maxlength="80" autocomplete="address-level2" value="${safe(profile.city||'')}"></div><div class="field"><label for="onboardProfession">Hünär</label><input id="onboardProfession" maxlength="80" value="${safe(profile.profession||'')}"></div></div><div class="auth-school"><span>🏫</span><span><b>Öde Abdullaýew adyndaky mekdep</b><small>2000-nji ýylyň uçurymlary</small></span></div><label class="auth-consent"><input id="onboardConfirm" type="checkbox"> <span>Maglumatlaryň dogrudygyny tassyklaýaryn.</span></label></div>`,
+    onConfirm:async button=>{
+      const fullName=$('#onboardName').value.trim();
+      if(!fullName)throw new Error('Doly adyňyzy ýazyň.');
+      if(!$('#onboardConfirm')?.checked)throw new Error('Maglumatlaryň dogrudygyny tassyklaň.');
+      button.disabled=true;
+      button.setAttribute('aria-busy','true');
+      try{
+        await completeOnboarding({
+          fullName,
+          shortName:fullName.split(/\s+/)[0],
+          city:$('#onboardCity').value.trim(),
+          profession:$('#onboardProfession').value.trim(),
+          school:'Öde Abdullaýew adyndaky mekdep',
+          graduationYear:2000,
+          avatarURL:profile.avatarURL||runtime.user.photoURL||''
+        });
+        bridge.closeModal();
+        updateAccountPanel();
+        toast('Klas akkauntyňyz taýýar');
+      }finally{
+        button.disabled=false;
+        button.setAttribute('aria-busy','false');
+      }
+    }
+  });
+}
+
+function signOutDialog(){
+  modal({
+    title:'Akkauntdan çykmak',
+    confirmText:'Howa, çyk',
+    cancelText:'Gal',
+    body:`${authIdentity()}<div class="backend-modal-status">Firebase sessiýasy tamamlanar. Ýerli demo maglumatlaryňyz bu brauzerde saklanar.</div>`,
+    onConfirm:async button=>{
+      button.disabled=true;
+      button.setAttribute('aria-busy','true');
+      try{
+        await logout();
+        bridge.closeModal();
+        toast('Google akkauntyndan çykdyňyz');
+      }catch(error){throw new Error(authErrorMessage(error))}
+      finally{
+        button.disabled=false;
+        button.setAttribute('aria-busy','false');
+      }
+    }
+  });
+}
+
 function profileEditor(){const p=runtime.profile||{};modal({title:'Firebase profili',confirmText:'Sakla',body:`<div class="form-grid"><div class="field"><label>Doly ady</label><input id="rpName" value="${safe(p.fullName||runtime.user.displayName||'')}"></div><div class="form-grid two"><div class="field"><label>Şäher</label><input id="rpCity" value="${safe(p.city||'')}"></div><div class="field"><label>Hünär</label><input id="rpJob" value="${safe(p.profession||'')}"></div></div><div class="field"><label>Bio</label><textarea id="rpBio">${safe(p.bio||'')}</textarea></div><div class="field"><label>Avatar faýly</label><input id="rpFile" type="file" accept="image/*"></div><div class="field"><label>Ýa-da URL</label><input id="rpUrl" type="url" value="${safe(p.avatarURL||runtime.user.photoURL||'')}"></div></div>`,onConfirm:async b=>{const fullName=$('#rpName').value.trim();if(!fullName)throw new Error('Adyňyzy ýazyň.');b.disabled=true;try{const f=$('#rpFile').files[0];let avatarURL=$('#rpUrl').value.trim();if(f)avatarURL=await uploadMedia(f,'klas/avatars');await saveProfile({fullName,shortName:fullName.split(' ')[0],city:$('#rpCity').value.trim(),profession:$('#rpJob').value.trim(),bio:$('#rpBio').value.trim(),avatarURL});bridge.closeModal();toast('Profil saklandy')}finally{b.disabled=false}}})}
 function composer(mode='text'){const media=mode==='image'?'<div class="field"><label>Surat</label><input id="rpostFile" type="file" accept="image/*"></div><div class="field"><label>Ýa-da URL</label><input id="rpostUrl" type="url"></div>':mode==='video'?'<div class="field"><label>Wideo</label><input id="rpostFile" type="file" accept="video/*"></div><div class="field"><label>Ýa-da URL</label><input id="rpostUrl" type="url"></div>':'';modal({title:'Firebase posty',confirmText:'Çap et',body:`<div class="form-grid"><div class="field"><label>Tekst</label><textarea id="rpostText"></textarea></div>${media}<div id="rpostProgress"></div></div>`,onConfirm:async b=>{const text=$('#rpostText').value.trim(),f=$('#rpostFile')?.files?.[0];let url=$('#rpostUrl')?.value.trim()||'';if(!text&&!f&&!url)throw new Error('Tekst ýa-da media gerek.');b.disabled=true;try{if(f){$('#rpostProgress').innerHTML='<div class="upload-progress"><span></span></div>';url=await uploadMedia(f,mode==='video'?'klas/videos':'klas/posts')}await createPost({text,imageURL:mode==='image'?url:'',videoURL:mode==='video'?url:''});bridge.closeModal();toast('Post Firebase-de çap edildi')}finally{b.disabled=false}}})}
 function groupEditor(){modal({title:'Firebase gurnagy',confirmText:'Döret',body:'<div class="form-grid"><div class="field"><label>Ady</label><input id="rgName"></div><div class="field"><label>Nyşan</label><input id="rgIcon" value="🏫"></div><div class="field"><label>Beýany</label><textarea id="rgDesc"></textarea></div></div>',onConfirm:async()=>{const name=$('#rgName').value.trim();if(!name)throw new Error('Ady gerek.');await createGroup({name,icon:$('#rgIcon').value.trim()||'🏫',description:$('#rgDesc').value.trim()});bridge.closeModal()}})}
@@ -12,8 +119,25 @@ function eventEditor(){modal({title:'Firebase çäresi',confirmText:'Döret',bod
 function mediaEditor(){modal({title:'Cloudinary media',confirmText:'Ýükle',body:'<div class="form-grid"><div class="field"><label>Ady</label><input id="rmTitle"></div><div class="field"><label>Faýl</label><input id="rmFile" type="file" accept="image/*,video/*"></div><div class="field"><label>Ýa-da URL</label><input id="rmUrl" type="url"></div></div>',onConfirm:async b=>{const f=$('#rmFile').files[0];let src=$('#rmUrl').value.trim();b.disabled=true;try{if(f)src=await uploadMedia(f,f.type.startsWith('video/')?'klas/videos':'klas/albums');if(!src)throw new Error('Faýl ýa-da URL gerek.');await createMedia({title:$('#rmTitle').value.trim()||'Täze media',src,type:f?.type.startsWith('video/')||/\.(mp4|webm|ogg)(\?|#|$)/i.test(src)?'video':'image'});bridge.closeModal()}finally{b.disabled=false}}})}
 function storyEditor(){modal({title:'Firebase pursaty',confirmText:'Paýlaş',body:'<div class="form-grid"><div class="field"><label>Ýazgy</label><textarea id="rsText"></textarea></div><div class="field"><label>Surat</label><input id="rsFile" type="file" accept="image/*"></div><div class="field"><label>Ýa-da URL</label><input id="rsUrl" type="url"></div></div>',onConfirm:async b=>{const f=$('#rsFile').files[0];let media=$('#rsUrl').value.trim();b.disabled=true;try{if(f)media=await uploadMedia(f,'klas/stories');if(!media)throw new Error('Surat gerek.');await createStory({text:$('#rsText').value.trim(),media});bridge.closeModal()}finally{b.disabled=false}}})}
 
-$('#authBtn')?.addEventListener('click',async()=>{try{if(runtime.user)await logout();else await login()}catch(e){toast(e.message||'Google giriş başartmady')}});
+$('#authBtn')?.addEventListener('click',()=>runtime.user?signOutDialog():authDialog());
+$('#accountActionBtn')?.addEventListener('click',()=>{
+  const action=$('#accountActionBtn').dataset.accountAction;
+  if(action==='onboarding')onboardingDialog();
+  else if(action==='profile')profileEditor();
+  else authDialog();
+});
 $('#configureCloudinaryBtn')?.addEventListener('click',cloudSettings);updateCloudState();
+updateAccountPanel();
+
+window.addEventListener('klas-auth',event=>{
+  updateAccountPanel();
+  if(event.detail?.user&&event.detail?.needsOnboarding){
+    window.setTimeout(()=>{
+      if(runtime.user&&runtime.account?.onboardingComplete===false)onboardingDialog();
+    },350);
+  }
+});
+window.addEventListener('klas-account',updateAccountPanel);
 
 document.addEventListener('click',async e=>{const t=e.target;if(t.closest('#configureCloudinaryBtn')){e.preventDefault();e.stopImmediatePropagation();cloudSettings();return}if(!runtime.user)return;const c=t.closest('#composerOpen,[data-compose]');if(c){e.preventDefault();e.stopImmediatePropagation();composer(c.dataset.compose||'text');return}if(t.closest('#editProfileBtn')){e.preventDefault();e.stopImmediatePropagation();profileEditor();return}if(t.closest('[data-story-add]')){e.preventDefault();e.stopImmediatePropagation();storyEditor();return}if(t.closest('#createGroupBtn')){e.preventDefault();e.stopImmediatePropagation();groupEditor();return}if(t.closest('#createEventBtn')){e.preventDefault();e.stopImmediatePropagation();eventEditor();return}if(t.closest('#uploadMediaBtn')){e.preventDefault();e.stopImmediatePropagation();mediaEditor();return}
 const like=t.closest('[data-like]');if(like){const p=bridge.getPost(like.dataset.like);if(p?.remote){e.preventDefault();e.stopImmediatePropagation();try{const liked=await toggleLike(p.id);if(liked)await notifyPostAuthor(p.id,'like',`${runtime.profile?.shortName||'Bir ulanyjy'} postuňyzy halady`,'❤️')}catch(x){toast(x.message)}return}}

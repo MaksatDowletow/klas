@@ -63,6 +63,10 @@ jobs:
           grep -q '"rules": "firestore.rules"' firebase.json
           grep -q '"indexes": "firestore.indexes.json"' firebase.json
           grep -q 'project-789b5025-7a3c-4b74-88b' .firebaserc
+          grep -q "sign_in_provider == 'google.com'" firestore.rules
+          grep -q 'function isActiveMember()' firestore.rules
+          grep -q 'function isProvisionedMember()' firestore.rules
+          grep -q "get('status', 'blocked') == 'active'" firestore.rules
 
       - name: Install Firebase CLI
         run: npm install --global firebase-tools@latest
