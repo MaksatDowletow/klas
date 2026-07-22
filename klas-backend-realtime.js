@@ -11,7 +11,7 @@ import {
   bridge,
   timeLabel,
   handleError
-} from './klas-backend-core.js?v=20260722-dynamic1';
+} from './klas-backend-core.js';
 
 const commentStops = new Map();
 let syncFrame = 0;
