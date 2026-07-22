@@ -1,7 +1,7 @@
-import { runtime, bridge, $, safe, toast, login, logout, cloudConfig, cloudReady, saveCloudConfig, updateCloudState, uploadMedia, saveProfile, createPost, toggleLike, addComment, deletePost } from './klas-backend-core.js?v=20260722-dynamic1';
-import { ensureConversation, sendMessage } from './klas-backend-chat.js?v=20260722-dynamic1';
-import { createGroup, toggleGroup, deleteGroup, createEvent, toggleEvent, deleteEvent, createMedia, deleteMedia, createStory, deleteStory } from './klas-backend-community.js?v=20260722-dynamic1';
-import { toggleFriendship, notifyPostAuthor, markRead, markAllRead } from './klas-backend-notifications.js?v=20260722-dynamic1';
+import { runtime, bridge, $, safe, toast, login, logout, cloudConfig, cloudReady, saveCloudConfig, updateCloudState, uploadMedia, saveProfile, createPost, toggleLike, addComment, deletePost } from './klas-backend-core.js';
+import { ensureConversation, sendMessage } from './klas-backend-chat.js';
+import { createGroup, toggleGroup, deleteGroup, createEvent, toggleEvent, deleteEvent, createMedia, deleteMedia, createStory, deleteStory } from './klas-backend-community.js';
+import { toggleFriendship, notifyPostAuthor, markRead, markAllRead } from './klas-backend-notifications.js';
 
 function modal(o){bridge.openModal(o)}
 function cloudSettings(){const c=cloudConfig();modal({title:'Cloudinary sazlamasy',confirmText:'Sakla',body:`<div class="backend-modal-status">Diňe Cloud Name we Unsigned Upload Preset gerek. API Secret açyk koda goýulmaýar.</div><div class="form-grid"><div class="field"><label>Cloud Name</label><input id="cloudNameInput" value="${safe(c.cloudName||'')}"></div><div class="field"><label>Unsigned Upload Preset</label><input id="cloudPresetInput" value="${safe(c.uploadPreset||'klas_unsigned')}"></div></div>`,onConfirm:()=>{const n=$('#cloudNameInput').value.trim(),p=$('#cloudPresetInput').value.trim();if(!n||!p)throw new Error('Iki meýdan hem hökmany.');saveCloudConfig(n,p);bridge.closeModal();toast('Cloudinary sazlandy')}})}
