@@ -50,8 +50,8 @@ GitHub Pages HTTPS bolany üçin kamera/mikrofon API-si işläp biler. Ulanyjy b
 
 Brauzere diňe şu public maglumatlar gerek:
 
-- Cloud Name;
-- Unsigned Upload Preset.
+- Cloud Name: `fitojlfl`;
+- Unsigned Upload Preset: `klas_unsigned`.
 
 API Secret-i public repository-ä hiç wagt goýmaň.
 
@@ -63,7 +63,7 @@ API Secret-i public repository-ä hiç wagt goýmaň.
 - custom public ID gadagan;
 - asset folder: `klas`.
 
-Klas-da **Sazlamalar → Cloudinary media → Sazla** bölüminde Cloud Name we preset giriziň.
+Bu bahalar `klas-config.js` içinde production default hökmünde sazlandy. Klas-da **Sazlamalar → Cloudinary media → Sazla** bölümi olary görkezýär we zerur bolsa diňe şol brauzer üçin üýtgetmäge mümkinçilik berýär.
 
 ## Esasy Firestore kolleksiýalary
 

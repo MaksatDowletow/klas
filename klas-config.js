@@ -12,7 +12,7 @@ window.KLAS_CONFIG = Object.freeze({
     appId: '1:608095045728:web:aadf57f6b130927868db05'
   }),
   cloudinary: Object.freeze({
-    cloudName: '',
+    cloudName: 'fitojlfl',
     uploadPreset: 'klas_unsigned',
     maxImageBytes: 10 * 1024 * 1024,
     maxVideoBytes: 50 * 1024 * 1024
@@ -27,7 +27,7 @@ window.KLAS_CONFIG = Object.freeze({
     ringTimeoutMs: 45000
   }),
   app: Object.freeze({
-    version: '5.3.0',
+    version: '5.3.1',
     firebaseSdkVersion: '12.16.0',
     allowLocalFallback: true,
     dynamicPages: true,
