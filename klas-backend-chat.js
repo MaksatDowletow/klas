@@ -76,3 +76,4 @@ function stop() {
   bridge.mergeRemoteChats([]);
 }
 window.addEventListener('klas-auth', event => event.detail.user ? start() : stop());
+if (runtime.user) start();
