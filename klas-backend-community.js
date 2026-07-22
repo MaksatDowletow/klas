@@ -14,3 +14,4 @@ export const deleteMedia=id=>deleteDoc(doc(db,'media',id));
 export async function createStory(d){await addDoc(collection(db,'stories'),{...d,ownerId:runtime.user.uid,ownerName:runtime.profile?.shortName||runtime.user.displayName||'Ulanyjy',ownerAvatar:runtime.profile?.avatarURL||runtime.user.photoURL||'',createdAt:serverTimestamp()})}
 export const deleteStory=id=>deleteDoc(doc(db,'stories',id));
 window.addEventListener('klas-auth',e=>e.detail.user?start():clear());
+if(runtime.user)start();
