@@ -67,10 +67,9 @@ service cloud.firestore {
       allow create: if isSelf(uid)
         && request.resource.data.uid == request.auth.uid
         && !request.resource.data.keys().hasAny(['role', 'status', 'admin']);
-      allow update: if (isSelf(uid)
+      allow update: if isSelf(uid)
         && request.resource.data.uid == resource.data.uid
-        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['fullName', 'shortName', 'email', 'avatarURL', 'city', 'bio', 'school', 'graduationYear', 'profession', 'online', 'lastSeen', 'updatedAt']))
-        || isModeratorOrAdmin();
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['fullName', 'shortName', 'email', 'avatarURL', 'city', 'bio', 'school', 'graduationYear', 'profession', 'online', 'lastSeen', 'updatedAt']);
       allow delete: if isAdmin();
     }
 
@@ -85,7 +84,9 @@ service cloud.firestore {
         && request.resource.data.authorId == resource.data.authorId
         && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['authorName', 'authorAvatar', 'authorRole', 'text', 'imageURL', 'videoURL', 'visibility', 'updatedAt']))
         || validLikeCounterChange(postId)
-        || isModeratorOrAdmin();
+        || (isModeratorOrAdmin()
+          && request.resource.data.authorId == resource.data.authorId
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['visibility', 'moderationStatus', 'moderationReason', 'updatedAt']));
       allow delete: if (signedIn() && resource.data.authorId == request.auth.uid) || isModeratorOrAdmin();
 
       match /likes/{uid} {
@@ -172,8 +173,7 @@ service cloud.firestore {
         && resource.data.ownerId == request.auth.uid
         && request.resource.data.ownerId == resource.data.ownerId
         && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['name', 'icon', 'description', 'updatedAt']))
-        || validGroupMembershipChange()
-        || isModeratorOrAdmin();
+        || validGroupMembershipChange();
       allow delete: if (signedIn() && resource.data.ownerId == request.auth.uid) || isModeratorOrAdmin();
     }
 
@@ -186,8 +186,7 @@ service cloud.firestore {
         && resource.data.ownerId == request.auth.uid
         && request.resource.data.ownerId == resource.data.ownerId
         && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['title', 'date', 'time', 'location', 'description', 'updatedAt']))
-        || validEventAttendanceChange()
-        || isModeratorOrAdmin();
+        || validEventAttendanceChange();
       allow delete: if (signedIn() && resource.data.ownerId == request.auth.uid) || isModeratorOrAdmin();
     }
 
