@@ -48,6 +48,17 @@ jobs:
             klas-backend-notifications.js
             klas-backend-video.js
             klas-backend-realtime.js
+            klas-pwa.js
+            service-worker.js
+            manifest.webmanifest
+            offline.html
+            assets/icons/klas-icon.svg
+            assets/icons/klas-maskable.svg
+            assets/icons/klas-180.png
+            assets/icons/klas-192.png
+            assets/icons/klas-512.png
+            assets/icons/klas-maskable-192.png
+            assets/icons/klas-maskable-512.png
             404.html
             health.json
           )
@@ -57,9 +68,14 @@ jobs:
           grep -q "klas-backend-bootstrap.js" index.html
           grep -q "klas-backend-realtime.js" klas-backend-bootstrap.js
           for file in klas-*.js; do node --check "$file"; done
+          node --check service-worker.js
+          jq empty manifest.webmanifest health.json
+          grep -q 'rel="manifest" href="./manifest.webmanifest"' index.html
+          grep -q '"start_url": "/klas/' manifest.webmanifest
+          grep -q '"scope": "/klas/"' manifest.webmanifest
           grep -q 'https://maksatdowletow.github.io/klas/' index.html
           ! grep -q 'github.io/Klas/' index.html
-          grep -q "version: '5.4.0'" klas-config.js
+          grep -q "version: '5.5.0'" klas-config.js
 
       - name: Build clean Pages artifact
         shell: bash
@@ -88,20 +104,39 @@ jobs:
             klas-backend-notifications.js
             klas-backend-video.js
             klas-backend-realtime.js
+            klas-pwa.js
+            service-worker.js
+            manifest.webmanifest
+            offline.html
           )
           cp "${runtime[@]}" _site/
+          mkdir -p _site/assets/icons
+          cp \
+            assets/icons/klas-icon.svg \
+            assets/icons/klas-maskable.svg \
+            assets/icons/klas-180.png \
+            assets/icons/klas-192.png \
+            assets/icons/klas-512.png \
+            assets/icons/klas-maskable-192.png \
+            assets/icons/klas-maskable-512.png \
+            _site/assets/icons/
           touch _site/.nojekyll
           cat > _site/release.json <<EOF
           {
             "app": "Klas",
-            "version": "5.4.0",
+            "version": "5.5.0",
             "commit": "${GITHUB_SHA}",
             "dynamicPages": true,
-            "realtimeComments": true
+            "realtimeComments": true,
+            "pwa": true,
+            "offlineShell": true
           }
           EOF
           test -s _site/index.html
           test -s _site/klas-backend-realtime.js
+          test -s _site/manifest.webmanifest
+          test -s _site/service-worker.js
+          test -s _site/assets/icons/klas-maskable-512.png
 
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5

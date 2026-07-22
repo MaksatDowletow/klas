@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="title">
+  <title id="title">Klas</title>
+  <defs>
+    <linearGradient id="brand" x1="80" y1="64" x2="432" y2="448" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#2563eb"/>
+      <stop offset="1" stop-color="#4f46e5"/>
+    </linearGradient>
+  </defs>
+  <rect x="24" y="24" width="464" height="464" rx="128" fill="url(#brand)"/>
+  <path d="M160 112v288h72V288l112 112h96L296 248 432 112h-96L232 224V112z" fill="#fff"/>
+</svg>

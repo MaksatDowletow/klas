@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="title">
+  <title id="title">Klas maskable</title>
+  <defs>
+    <linearGradient id="brand" x1="48" y1="32" x2="464" y2="480" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#2563eb"/>
+      <stop offset="1" stop-color="#4f46e5"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" fill="url(#brand)"/>
+  <circle cx="432" cy="80" r="118" fill="#fff" opacity=".08"/>
+  <circle cx="72" cy="448" r="150" fill="#0b1f59" opacity=".12"/>
+  <path d="M160 112v288h72V288l112 112h96L296 248 432 112h-96L232 224V112z" fill="#fff"/>
+</svg>

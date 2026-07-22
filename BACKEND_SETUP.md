@@ -1,5 +1,15 @@
 # Klas Firebase + Cloudinary + WebRTC backend
 
+## Windows we Android PWA
+
+Klas `https://maksatdowletow.github.io/klas/` salgysynda install edilýän web programma hökmünde işleýär.
+
+- **Windows:** Microsoft Edge ýa-da Chrome-da Klas-y açyň. Salgy setirindäki programma gurmak nyşanyny ýa-da **Sazlamalar → Klas programmasy → Gur** düwmesini basyň.
+- **Android:** Chrome-da Klas-y açyň. **Sazlamalar → Klas programmasy → Gur** düwmesini ýa-da brauzeriň **Programmany gur** menýusyny saýlaň.
+- Ilkinji gezek online ýagdaýda açylanda esasy programma faýllary offline ulanmak üçin keşlenýär.
+- Firebase, Cloudinary we wideo jaň maglumatlary offline keşlenmeýär; bu hyzmatlara internet gerek.
+- Täze wersiýa taýýar bolanda **Täzele** düwmesi görkezilýär. Açyk WebRTC jaňyny duýdansyz kesmezlik üçin programma öz-özünden täzelenmeýär.
+
 ## Firebase
 
 Frontend resmi Firebase CDN-den Firebase JS SDK 12.16.0 ulanýar.
