@@ -1,17 +1,22 @@
-# Klasdaslar
+# Klas
 
-Turkmen-language static prototype for a classmates communication website.
+Türkmen dilindäki mekdep jemgyýeti we synpdaşlar platformasy. Production frontend GitHub Pages-de işleýär; Google-only Firebase Authentication, Cloud Firestore realtime maglumatlary, Cloudinary media, WebRTC wideo jaň we Windows/Android PWA goldawy bar.
 
 ## Run locally
 
 Open `index.html` in a browser, or serve the folder through any static web server.
 
-Main files:
+Esasy runtime faýllary:
 
 - `index.html`
-- `styles.css`
-- `app.js`
+- `klas-v4.css`
+- `klas-backend-core.js`
+- `klas-backend-ui.js`
+- `firestore.rules`
+- `service-worker.js`
 
-## Notes
+## Authentication
 
-Gmail registration and video chat are implemented as frontend demo flows. Production deployment needs a real Google OAuth client, backend authentication, storage, moderation APIs, and WebRTC signaling.
+Klas diňe Google provider-i ulanýar. Ilkinji üstünlikli Google giriş Firebase Authentication akkauntyny we `users/{uid}` + `profiles/{uid}` ýazgylaryny döredýär. Email/password we telefon giriş akymlary ýok. Firestore maglumatlary diňe Google token-li, `active` ýagdaýly Klas agzalaryna açyk.
+
+Deployment we Firebase Console sazlamalary üçin `BACKEND_SETUP.md`, gizlinlik beýany üçin `privacy.html` faýlyna serediň.

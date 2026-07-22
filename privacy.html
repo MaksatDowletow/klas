@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="tk">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#2563eb" />
+  <meta name="robots" content="index,follow" />
+  <meta name="referrer" content="strict-origin-when-cross-origin" />
+  <link rel="canonical" href="https://maksatdowletow.github.io/klas/privacy.html" />
+  <link rel="icon" href="./assets/icons/klas-icon.svg" type="image/svg+xml" />
+  <title>Gizlinlik we jemgyýet düzgünleri — Klas</title>
+  <style>
+    :root{color-scheme:light dark;--brand:#2563eb;--bg:#f4f7fb;--card:#fff;--text:#0f172a;--muted:#64748b;--line:#dbe3ef}
+    *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:16px/1.65 system-ui,-apple-system,"Segoe UI",sans-serif}a{color:var(--brand)}
+    header{position:sticky;top:0;background:color-mix(in srgb,var(--card) 92%,transparent);border-bottom:1px solid var(--line);backdrop-filter:blur(16px)}
+    header div,main{width:min(820px,calc(100% - 32px));margin:auto}header div{display:flex;align-items:center;justify-content:space-between;gap:16px;min-height:68px}.brand{font-weight:900;text-decoration:none;color:var(--text)}
+    main{padding:28px 0 56px}.card{background:var(--card);border:1px solid var(--line);border-radius:22px;padding:clamp(20px,5vw,38px);box-shadow:0 18px 50px rgba(15,23,42,.08)}h1{font-size:clamp(28px,6vw,42px);line-height:1.15;margin:0 0 10px}h2{margin:30px 0 8px;font-size:21px}p,li{color:var(--muted)}ul{padding-left:22px}.note{padding:14px 16px;border-left:4px solid var(--brand);background:color-mix(in srgb,var(--brand) 8%,var(--card));border-radius:12px}.updated{font-size:13px}
+    @media(prefers-color-scheme:dark){:root{--bg:#0b1320;--card:#111c2d;--text:#edf4ff;--muted:#a9b7ca;--line:#26364d}}
+  </style>
+</head>
+<body>
+  <header><div><a class="brand" href="./">← Klas</a><span>Gizlinlik we düzgünler</span></div></header>
+  <main>
+    <article class="card">
+      <h1>Gizlinlik we jemgyýet düzgünleri</h1>
+      <p class="updated">Soňky täzelenme: 23.07.2026</p>
+      <p class="note">Klas-a diňe Google arkaly girilýär. Google parolyňyz Klas-a berilmeýär we Klas tarapyndan saklanmaýar.</p>
+
+      <h2>Haýsy maglumatlar ulanylýar?</h2>
+      <ul>
+        <li>Google ulanyjy ID-si, e-poçta salgysy, görkezilýän at we profil suraty;</li>
+        <li>özüňiz goşan şäher, hünär, bio we mekdep maglumatlary;</li>
+        <li>postlar, teswirler, dostluklar, habarlar, çäreler we media maglumatlary;</li>
+        <li>sesssiýa, onlaýn ýagdaý we soňky işjeňlik ýaly tehniki maglumatlar.</li>
+      </ul>
+
+      <h2>Maglumatlar nirede ulanylýar?</h2>
+      <p>Google giriş we sessiýa barlagy Firebase Authentication arkaly, jemgyýet maglumatlary Cloud Firestore arkaly işleýär. Surat/wideo ýüklemeleri Cloudinary, wideo jaň signaling-i Firestore we media akymy WebRTC arkaly amala aşyrylýar. Sahypa GitHub Pages-de ýerleşýär.</p>
+
+      <h2>Kim görüp biler?</h2>
+      <p>E-poçta we akkaunt dolandyryş maglumatlary diňe akkaunt eýesine we ygtyýarly administratoryna açyk. Jemgyýet profilleri we jemgyýet mazmuny diňe Google bilen giriş eden, ýagdaýy <strong>active</strong> bolan Klas agzalaryna görünýär.</p>
+
+      <h2>Ulanyjynyň hukuklary</h2>
+      <p>Profiliňizi Klas sazlamalarynda üýtgedip we islendik wagt akkauntdan çykyp bilersiňiz. Akkauntyňyzy we degişli şahsy maglumatlaryňyzy aýyrmak üçin Klas administratoryna ýüz tutuň. Howpsuzlyk sebäpli şahsyýetiňiz Google akkaunty arkaly gaýtadan barlanyp bilner.</p>
+
+      <h2>Jemgyýet düzgünleri</h2>
+      <ul>
+        <li>Başga agzanyň adyndan çykyş etmäň we ýalan profil döretmäň.</li>
+        <li>Şahsy maglumatlary eýesiniň rugsady bolmazdan paýlaşmaň.</li>
+        <li>Kemsidiji, howply, spam ýa-da kanuna garşy mazmun paýlaşmaň.</li>
+        <li>Surat/wideo paýlaşanyňyzda degişli adamlaryň razylygyny göz öňünde tutuň.</li>
+        <li>Düzgüni bozýan akkaunt ýa-da mazmun çäklendirilip ýa-da aýrylyp bilner.</li>
+      </ul>
+
+      <h2>Howpsuzlyk</h2>
+      <p>Giriş diňe HTTPS arkaly işleýär. Firestore düzgünleri Google provider-i, agzanyň ýagdaýyny, eýeçiligi we rol üýtgeşmelerini barlaýar. Public frontend konfigurasiýasyna API secret ýa-da Google paroly ýerleşdirilmeýär.</p>
+    </article>
+  </main>
+</body>
+</html>

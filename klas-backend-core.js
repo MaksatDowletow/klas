@@ -37,6 +37,8 @@ export const auth = getAuth(app);
 export const db = getFirestore(app);
 export const provider = new GoogleAuthProvider();
 provider.setCustomParameters({ prompt: 'select_account' });
+provider.addScope('email');
+auth.useDeviceLanguage();
 
 export const runtime = {
   user: null,
@@ -55,6 +57,7 @@ export const toast = text => bridge.toast(text);
 
 const cloudKey = 'klas-cloudinary-public-config';
 let presenceSequence = Promise.resolve();
+let authOperation = null;
 
 export function millis(value){
   return value?.toMillis?.() || value?.seconds * 1000 || Date.parse(value || '') || 0;
@@ -95,6 +98,41 @@ export function handleError(error, prefix = 'Firebase ýalňyşlygy'){
   const code = error?.code || error?.message || 'unknown';
   setStatus(`${prefix}: ${code}`, 'error');
   if (String(code).includes('permission-denied')) toast(`${prefix}. Firestore Rules sazlamasyny barlaň.`);
+}
+
+export function authErrorMessage(error){
+  const code = String(error?.code || '');
+  const messages = {
+    'auth/popup-closed-by-user': 'Google giriş penjiresi tamamlanmazdan ýapyldy.',
+    'auth/cancelled-popup-request': 'Öňki Google giriş synanyşygy bes edildi. Täzeden synanyşyň.',
+    'auth/popup-blocked': 'Brauzer Google giriş penjiresini bloklady. Redirect arkaly dowam edilýär.',
+    'auth/network-request-failed': 'Internet baglanyşygy sebäpli Google giriş başartmady.',
+    'auth/unauthorized-domain': 'Bu domen Firebase Google giriş üçin rugsatlandyrylmady.',
+    'auth/operation-not-allowed': 'Firebase Console-da Google giriş usuly açylmadyk.',
+    'auth/account-exists-with-different-credential': 'Bu e-poçta başga giriş usuly bilen baglanyşykly.',
+    'auth/user-disabled': 'Bu Google akkaunty Klas üçin öçürilen.',
+    'auth/too-many-requests': 'Gaty köp giriş synanyşygy edildi. Biraz wagtdan gaýtadan synanyşyň.',
+    'auth/web-storage-unsupported': 'Brauzer sessiýany saklamagy bloklaýar. Cookie we site data sazlamasyny barlaň.',
+    'auth/internal-error': 'Google giriş hyzmatynda wagtlaýyn näsazlyk ýüze çykdy.'
+  };
+  return messages[code] || error?.message || 'Google giriş başartmady.';
+}
+
+function updateAuthButton({ busy = false, signedIn = Boolean(runtime.user) } = {}){
+  const button = $('#authBtn');
+  if (!button) return;
+  button.disabled = busy;
+  button.setAttribute('aria-busy', String(busy));
+  if (busy) {
+    button.textContent = signedIn ? 'Çykylýar…' : 'Garaşyň…';
+    button.setAttribute('aria-label', button.textContent);
+    return;
+  }
+  button.textContent = signedIn ? 'Çykmak' : 'Google giriş';
+  button.setAttribute('aria-label', signedIn
+    ? `${runtime.user?.displayName || 'Google'} akkauntyndan çykmak`
+    : 'Google bilen giriş ýa-da akkaunt döretmek');
+  button.classList.toggle('signed-in', signedIn);
 }
 
 export function cloudConfig(){
@@ -153,21 +191,32 @@ export async function uploadMedia(file, folder = 'klas/posts'){
 }
 
 function shouldUseRedirect(){
-  return matchMedia('(max-width: 760px)').matches || /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+  return window.matchMedia?.('(max-width: 760px)').matches
+    || /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
 }
 
 export async function login(){
-  if (shouldUseRedirect()) {
-    await signInWithRedirect(auth, provider);
-    return;
-  }
-  try { await signInWithPopup(auth, provider); }
-  catch (error) {
-    if (['auth/popup-blocked', 'auth/operation-not-supported-in-this-environment'].includes(error.code)) {
+  if (authOperation) return authOperation;
+  if (!navigator.onLine) throw new Error('Google giriş üçin internet baglanyşygy gerek.');
+  authOperation = (async () => {
+    updateAuthButton({ busy: true, signedIn: false });
+    if (shouldUseRedirect()) {
       await signInWithRedirect(auth, provider);
       return;
     }
-    throw error;
+    try { await signInWithPopup(auth, provider); }
+    catch (error) {
+      if (['auth/popup-blocked', 'auth/operation-not-supported-in-this-environment'].includes(error.code)) {
+        await signInWithRedirect(auth, provider);
+        return;
+      }
+      throw error;
+    }
+  })();
+  try { return await authOperation; }
+  finally {
+    authOperation = null;
+    updateAuthButton({ signedIn: Boolean(runtime.user) });
   }
 }
 
@@ -186,8 +235,17 @@ async function setPresence(online){
 }
 
 export async function logout(){
-  await setPresence(false).catch(() => {});
-  await signOut(auth);
+  if (authOperation) return authOperation;
+  authOperation = (async () => {
+    updateAuthButton({ busy: true, signedIn: true });
+    await setPresence(false).catch(() => {});
+    await signOut(auth);
+  })();
+  try { return await authOperation; }
+  finally {
+    authOperation = null;
+    updateAuthButton({ signedIn: Boolean(auth.currentUser) });
+  }
 }
 
 async function ensureProfile(user){
@@ -195,14 +253,17 @@ async function ensureProfile(user){
   const profileRef = doc(db, 'profiles', user.uid);
   const [userSnapshot, profileSnapshot] = await Promise.all([getDoc(userRef), getDoc(profileRef)]);
 
-  if (!userSnapshot.exists()) {
+  const isNewAccount = !userSnapshot.exists();
+  if (isNewAccount) {
     await setDoc(userRef, {
       uid: user.uid,
       email: user.email || '',
       displayName: user.displayName || '',
       photoURL: user.photoURL || '',
+      authProvider: 'google.com',
       role: 'user',
       status: 'active',
+      onboardingComplete: false,
       createdAt: serverTimestamp(),
       lastLogin: serverTimestamp()
     });
@@ -211,12 +272,16 @@ async function ensureProfile(user){
       email: user.email || '',
       displayName: user.displayName || '',
       photoURL: user.photoURL || '',
+      authProvider: 'google.com',
       lastLogin: serverTimestamp()
     }, { merge: true });
   }
 
   const account = (await getDoc(userRef)).data();
   if (account.status === 'blocked') throw new Error('Bu Klas hasaby administrator tarapyndan bloklandy.');
+  if (account.status && account.status !== 'active') {
+    throw new Error('Bu Klas hasaby heniz işjeňleşdirilmedi. Administrator bilen habarlaşyň.');
+  }
 
   const base = {
     uid: user.uid,
@@ -254,7 +319,12 @@ async function ensureProfile(user){
     status: account.status || 'active'
   };
   delete profile.email;
-  return { account, profile };
+  return {
+    account,
+    profile,
+    isNewAccount,
+    needsOnboarding: isNewAccount || account.onboardingComplete === false
+  };
 }
 
 export async function saveProfile(data){
@@ -272,6 +342,23 @@ export async function saveProfile(data){
     uid: runtime.user.uid,
     updatedAt: serverTimestamp()
   }, { merge: true });
+}
+
+export async function completeOnboarding(data){
+  if (!runtime.user) throw new Error('Ilki Google bilen giriş ediň.');
+  await saveProfile(data);
+  await setDoc(doc(db, 'users', runtime.user.uid), {
+    onboardingComplete: true,
+    acceptedCommunityRulesAt: serverTimestamp(),
+    updatedAt: serverTimestamp()
+  }, { merge: true });
+  runtime.account = { ...runtime.account, onboardingComplete: true };
+  runtime.profile = { ...runtime.profile, ...data };
+  bridge.setCurrentUser(runtime.profile);
+  await startMemberData();
+  window.dispatchEvent(new CustomEvent('klas-account', {
+    detail: { user: runtime.user, account: runtime.account, profile: runtime.profile }
+  }));
 }
 
 function publicRole(profile){
@@ -443,6 +530,15 @@ function stop(){
   bridge.mergeRemotePeople([]);
 }
 
+async function startMemberData(){
+  bridge.setCloudMode(true);
+  stop();
+  subscribeProfiles();
+  subscribePosts();
+  setStatus('Firebase birikdi', 'online');
+  await setPresence(true).catch(() => {});
+}
+
 async function signedIn(user){
   bridge.setCloudMode(true);
   runtime.user = user;
@@ -450,17 +546,22 @@ async function signedIn(user){
   runtime.account = result.account;
   runtime.profile = result.profile;
   bridge.setCurrentUser(runtime.profile);
-  setStatus('Firebase birikdi', 'online');
-  const button = $('#authBtn');
-  if (button) {
-    button.textContent = 'Çykmak';
-    button.classList.add('signed-in');
+  updateAuthButton({ signedIn: true });
+  if (result.needsOnboarding) {
+    stop();
+    setStatus('Akkaunty tamamlaň');
+  } else {
+    await startMemberData();
   }
-  stop();
-  subscribeProfiles();
-  subscribePosts();
-  await setPresence(true).catch(() => {});
-  window.dispatchEvent(new CustomEvent('klas-auth', { detail: { user } }));
+  window.dispatchEvent(new CustomEvent('klas-auth', {
+    detail: {
+      user,
+      account: result.account,
+      profile: result.profile,
+      isNewAccount: result.isNewAccount,
+      needsOnboarding: result.needsOnboarding
+    }
+  }));
 }
 
 function signedOut(){
@@ -469,11 +570,7 @@ function signedOut(){
   runtime.account = null;
   stop();
   bridge.setCloudMode(false);
-  const button = $('#authBtn');
-  if (button) {
-    button.textContent = 'Google bilen giriş';
-    button.classList.remove('signed-in');
-  }
+  updateAuthButton({ signedIn: false });
   setStatus('Ýerli režim · giriş ýok');
   window.dispatchEvent(new CustomEvent('klas-auth', { detail: { user: null } }));
 }
@@ -488,12 +585,26 @@ window.addEventListener('pagehide', () => {
 try { await setPersistence(auth, browserLocalPersistence); }
 catch (error) { console.warn('Auth persistence sazlanmady', error); }
 try { await getRedirectResult(auth); }
-catch (error) { handleError(error, 'Redirect giriş başartmady'); }
+catch (error) {
+  const message = authErrorMessage(error);
+  console.error('Redirect giriş başartmady', error);
+  setStatus(message, 'error');
+  toast(message);
+}
 
 onAuthStateChanged(auth, user => {
   if (user) {
+    const googleAccount = user.providerData?.some(item => item.providerId === 'google.com');
+    if (!googleAccount) {
+      toast('Klas-a diňe Google akkaunty bilen girip bolýar.');
+      signOut(auth).catch(() => {});
+      return;
+    }
     signedIn(user).catch(async error => {
       handleError(error, 'Profil başlangyjy');
+      if (!String(error?.code || '').includes('permission-denied')) {
+        toast(error?.message || 'Google akkaunty açylmady.');
+      }
       await signOut(auth).catch(() => {});
     });
   } else signedOut();

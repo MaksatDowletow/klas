@@ -1,12 +1,13 @@
 'use strict';
 
-const CACHE_VERSION = 'klas-shell-v5.6.0';
+const CACHE_VERSION = 'klas-shell-v5.7.0';
 const APP_BASE = new URL('./', self.registration.scope);
 const appUrl = path => new URL(path, APP_BASE).href;
 const APP_SHELL = [
   './',
   './index.html',
   './offline.html',
+  './privacy.html',
   './manifest.webmanifest',
   './health.json',
   './klas-v4.css',
