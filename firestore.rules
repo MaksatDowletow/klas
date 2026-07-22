@@ -5,13 +5,31 @@ service cloud.firestore {
     function isSelf(uid) { return signedIn() && request.auth.uid == uid; }
     function accountPath(uid) { return /databases/$(database)/documents/users/$(uid); }
     function isAdmin() {
-      return signedIn() && exists(accountPath(request.auth.uid)) && get(accountPath(request.auth.uid)).data.get('role', 'user') == 'admin';
+      return signedIn()
+        && exists(accountPath(request.auth.uid))
+        && get(accountPath(request.auth.uid)).data.get('role', 'user') == 'admin';
     }
     function isModeratorOrAdmin() {
-      return signedIn() && exists(accountPath(request.auth.uid)) && get(accountPath(request.auth.uid)).data.get('role', 'user') in ['moderator', 'admin'];
+      return signedIn()
+        && exists(accountPath(request.auth.uid))
+        && get(accountPath(request.auth.uid)).data.get('role', 'user') in ['moderator', 'admin'];
+    }
+    function conversationPath(id) {
+      return /databases/$(database)/documents/conversations/$(id);
     }
     function isConversationMember(id) {
-      return signedIn() && request.auth.uid in get(/databases/$(database)/documents/conversations/$(id)).data.participants;
+      return signedIn()
+        && exists(conversationPath(id))
+        && request.auth.uid in get(conversationPath(id)).data.participants;
+    }
+    function callPath(id) {
+      return /databases/$(database)/documents/calls/$(id);
+    }
+    function isCallMember(id) {
+      return signedIn()
+        && exists(callPath(id))
+        && (get(callPath(id)).data.callerId == request.auth.uid
+          || get(callPath(id)).data.calleeId == request.auth.uid);
     }
     function validLikeCounterChange(postId) {
       let likePath = /databases/$(database)/documents/posts/$(postId)/likes/$(request.auth.uid);
@@ -48,7 +66,7 @@ service cloud.firestore {
     }
 
     match /users/{uid} {
-      allow read: if signedIn();
+      allow read: if isSelf(uid) || isAdmin();
       allow create: if isSelf(uid)
         && request.resource.data.uid == request.auth.uid
         && request.resource.data.get('role', 'user') == 'user'
@@ -66,10 +84,13 @@ service cloud.firestore {
       allow read: if signedIn();
       allow create: if isSelf(uid)
         && request.resource.data.uid == request.auth.uid
-        && !request.resource.data.keys().hasAny(['role', 'status', 'admin']);
+        && !request.resource.data.keys().hasAny(['role', 'status', 'admin', 'email']);
       allow update: if isSelf(uid)
         && request.resource.data.uid == resource.data.uid
-        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['fullName', 'shortName', 'email', 'avatarURL', 'city', 'bio', 'school', 'graduationYear', 'profession', 'online', 'lastSeen', 'updatedAt']);
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+          'fullName', 'shortName', 'email', 'avatarURL', 'city', 'bio', 'school',
+          'graduationYear', 'profession', 'online', 'lastSeen', 'updatedAt'
+        ]);
       allow delete: if isAdmin();
     }
 
@@ -82,11 +103,16 @@ service cloud.firestore {
       allow update: if (signedIn()
         && resource.data.authorId == request.auth.uid
         && request.resource.data.authorId == resource.data.authorId
-        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['authorName', 'authorAvatar', 'authorRole', 'text', 'imageURL', 'videoURL', 'visibility', 'updatedAt']))
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+          'authorName', 'authorAvatar', 'authorRole', 'text', 'imageURL',
+          'videoURL', 'visibility', 'updatedAt'
+        ]))
         || validLikeCounterChange(postId)
         || (isModeratorOrAdmin()
           && request.resource.data.authorId == resource.data.authorId
-          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['visibility', 'moderationStatus', 'moderationReason', 'updatedAt']));
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+            'visibility', 'moderationStatus', 'moderationReason', 'updatedAt'
+          ]));
       allow delete: if (signedIn() && resource.data.authorId == request.auth.uid) || isModeratorOrAdmin();
 
       match /likes/{uid} {
@@ -131,12 +157,16 @@ service cloud.firestore {
     match /conversations/{conversationId} {
       allow read: if signedIn() && request.auth.uid in resource.data.participants;
       allow create: if signedIn()
+        && request.resource.data.type == 'direct'
         && request.resource.data.participants.size() == 2
+        && request.resource.data.participants[0] != request.resource.data.participants[1]
         && request.auth.uid in request.resource.data.participants;
       allow update: if signedIn()
         && request.auth.uid in resource.data.participants
         && request.resource.data.participants == resource.data.participants
-        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['lastMessage', 'updatedAt']);
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+          'lastMessage', 'lastMessageAt', 'lastMessageSenderId', 'updatedAt'
+        ]);
       allow delete: if false;
 
       match /messages/{messageId} {
@@ -145,10 +175,63 @@ service cloud.firestore {
           && request.resource.data.senderId == request.auth.uid
           && request.resource.data.text is string
           && request.resource.data.text.size() > 0
-          && request.resource.data.text.size() <= 4000;
+          && request.resource.data.text.size() <= 4000
+          && request.resource.data.seenBy == [request.auth.uid];
         allow update: if isConversationMember(conversationId)
-          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['seenBy']);
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['seenBy'])
+          && request.resource.data.get('seenBy', []).toSet().hasAll(resource.data.get('seenBy', []).toSet())
+          && request.resource.data.get('seenBy', []).toSet().difference(resource.data.get('seenBy', []).toSet()).size() == 1
+          && request.resource.data.get('seenBy', []).toSet().difference(resource.data.get('seenBy', []).toSet()).hasAll([request.auth.uid]);
         allow delete: if signedIn() && resource.data.senderId == request.auth.uid;
+      }
+
+      match /typing/{uid} {
+        allow read: if isConversationMember(conversationId);
+        allow create, update: if isSelf(uid)
+          && isConversationMember(conversationId)
+          && request.resource.data.active == true;
+        allow delete: if isSelf(uid) && isConversationMember(conversationId);
+      }
+    }
+
+    match /calls/{callId} {
+      allow read: if signedIn()
+        && (resource.data.callerId == request.auth.uid || resource.data.calleeId == request.auth.uid);
+      allow create: if signedIn()
+        && request.resource.data.callerId == request.auth.uid
+        && request.resource.data.calleeId != request.auth.uid
+        && request.resource.data.participants.size() == 2
+        && request.resource.data.participants.hasAll([
+          request.resource.data.callerId, request.resource.data.calleeId
+        ])
+        && request.resource.data.type == 'video'
+        && request.resource.data.status == 'ringing'
+        && request.resource.data.offer is map;
+      allow update: if signedIn()
+        && (resource.data.callerId == request.auth.uid || resource.data.calleeId == request.auth.uid)
+        && request.resource.data.callerId == resource.data.callerId
+        && request.resource.data.calleeId == resource.data.calleeId
+        && request.resource.data.participants == resource.data.participants
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+          'answer', 'status', 'updatedAt', 'endedAt'
+        ])
+        && ((request.auth.uid == resource.data.calleeId
+            && resource.data.status == 'ringing'
+            && request.resource.data.status in ['accepted', 'declined', 'busy'])
+          || (request.resource.data.status == 'ended'));
+      allow delete: if false;
+
+      match /callerCandidates/{candidateId} {
+        allow read: if isCallMember(callId);
+        allow create: if isCallMember(callId)
+          && get(callPath(callId)).data.callerId == request.auth.uid;
+        allow update, delete: if false;
+      }
+      match /calleeCandidates/{candidateId} {
+        allow read: if isCallMember(callId);
+        allow create: if isCallMember(callId)
+          && get(callPath(callId)).data.calleeId == request.auth.uid;
+        allow update, delete: if false;
       }
     }
 
@@ -185,7 +268,9 @@ service cloud.firestore {
       allow update: if (signedIn()
         && resource.data.ownerId == request.auth.uid
         && request.resource.data.ownerId == resource.data.ownerId
-        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['title', 'date', 'time', 'location', 'description', 'updatedAt']))
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+          'title', 'date', 'time', 'location', 'description', 'updatedAt'
+        ]))
         || validEventAttendanceChange();
       allow delete: if (signedIn() && resource.data.ownerId == request.auth.uid) || isModeratorOrAdmin();
     }
