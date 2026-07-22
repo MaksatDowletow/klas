@@ -4,141 +4,147 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="description" content="Klas — synpdaşlar, mekdep jemgyýeti, janly habarlaşyk we ýatlamalar platformasy." />
-  <meta name="theme-color" content="#2563eb" />
+  <meta name="theme-color" content="#2563eb" id="themeColor" />
   <meta name="robots" content="index,follow" />
-  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
-  <meta http-equiv="Pragma" content="no-cache" />
-  <meta http-equiv="Expires" content="0" />
-  <link rel="canonical" href="https://maksatdowletow.github.io/Klas/" />
+  <meta name="referrer" content="strict-origin-when-cross-origin" />
+  <meta property="og:title" content="Klas — Mekdep jemgyýeti" />
+  <meta property="og:description" content="Synpdaşlar, mekdep jemgyýeti, janly habarlaşyk we ýatlamalar platformasy." />
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://maksatdowletow.github.io/klas/" />
+  <link rel="canonical" href="https://maksatdowletow.github.io/klas/" />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='18' fill='%232563eb'/%3E%3Cpath d='M20 14v36h9V36l14 14h12L37 31l17-17H42L29 28V14z' fill='white'/%3E%3C/svg%3E" />
   <title>Klas — Mekdep jemgyýeti</title>
-  <link rel="stylesheet" href="./klas-v4.css?v=20260722-dynamic1" />
-  <link rel="stylesheet" href="./klas-backend.css?v=20260722-dynamic1" />
-  <link rel="stylesheet" href="./klas-livechat.css?v=20260722-dynamic1" />
+  <link rel="stylesheet" href="./klas-v4.css?v=20260722-audit1" />
+  <link rel="stylesheet" href="./klas-backend.css?v=20260722-audit1" />
+  <link rel="stylesheet" href="./klas-livechat.css?v=20260722-audit1" />
 </head>
 <body>
+  <a class="skip-link" href="#mainContent">Esasy mazmuna geç</a>
   <header class="topbar">
     <div class="topbar-inner">
-      <button aria-label="Menýuny aç" class="icon-btn mobile-menu" id="menuBtn">☰</button>
+      <button type="button" aria-label="Menýuny aç" aria-controls="sidebar" aria-expanded="false" class="icon-btn mobile-menu" id="menuBtn">☰</button>
       <a class="brand" href="#feed" aria-label="Klas baş sahypasy"><span class="logo">K</span><span>Klas</span></a>
-      <div class="search-wrap">
-        <span class="search-icon">⌕</span>
-        <input id="searchInput" autocomplete="off" placeholder="Synpdaş, gurnak, çäre ýa-da post gözle..." />
-        <button class="search-clear hidden" id="searchClear" aria-label="Gözlegi arassala">✕</button>
-        <div class="search-results hidden" id="searchResults"></div>
+      <div class="search-wrap" role="search">
+        <label class="sr-only" for="searchInput">Klas boýunça gözleg</label>
+        <span class="search-icon" aria-hidden="true">⌕</span>
+        <input id="searchInput" type="search" autocomplete="off" placeholder="Synpdaş, gurnak, çäre ýa-da post gözle..." aria-controls="searchResults" aria-expanded="false" />
+        <button type="button" class="search-clear hidden" id="searchClear" aria-label="Gözlegi arassala">✕</button>
+        <div class="search-results hidden" id="searchResults" aria-live="polite"></div>
       </div>
       <div class="top-actions">
-        <span class="backend-status" id="backendStatus">Ýerli režim taýýarlanýar…</span>
+        <span class="backend-status" id="backendStatus" role="status" aria-live="polite">Ýerli režim taýýarlanýar…</span>
         <button class="auth-btn" id="authBtn" type="button">Google bilen giriş</button>
-        <button aria-label="Tema" class="icon-btn" id="themeBtn">🌙</button>
-        <button aria-label="Bildirişler" class="icon-btn" data-page="notifications">🔔<span class="badge" id="noticeBadge">3</span></button>
-        <button aria-label="Habarlar" class="icon-btn" data-page="messages">💬<span class="badge secondary-badge hidden" id="messageBadge">0</span></button>
-        <button class="profile-btn" data-page="settings"><img alt="Profil suraty" class="avatar" id="headerAvatar" src="https://i.pravatar.cc/100?img=12"/><span id="headerName">Maksat</span></button>
+        <button type="button" aria-label="Tema" class="icon-btn" id="themeBtn">🌙</button>
+        <button type="button" aria-label="Bildirişler" class="icon-btn" data-page="notifications">🔔<span class="badge" id="noticeBadge">3</span></button>
+        <button type="button" aria-label="Habarlar" class="icon-btn" data-page="messages">💬<span class="badge secondary-badge hidden" id="messageBadge">0</span></button>
+        <button type="button" class="profile-btn" data-page="settings"><img alt="Profil suraty" class="avatar" id="headerAvatar" src="https://i.pravatar.cc/100?img=12"/><span id="headerName">Maksat</span></button>
       </div>
     </div>
   </header>
 
   <div class="layout">
-    <aside class="sidebar" id="sidebar">
+    <aside class="sidebar" id="sidebar" aria-label="Klas nawigasiýasy">
       <nav class="card nav" aria-label="Esasy bölümler">
-        <button class="active" data-page="feed">🏠 <span>Lenta</span></button>
-        <button data-page="classmates">👥 <span>Synpdaşlar</span><span class="count" id="peopleCount">0</span></button>
-        <button data-page="messages">💬 <span>Habarlaşyk</span><span class="count" id="chatUnreadCount">0</span></button>
-        <button data-page="groups">🏫 <span>Gurnaklar</span></button>
-        <button data-page="media">🖼️ <span>Media</span></button>
-        <button data-page="events">📅 <span>Duşuşyklar</span></button>
-        <button data-page="saved">🔖 <span>Saklananlar</span></button>
-        <button data-page="notifications">🔔 <span>Bildirişler</span></button>
-        <button data-page="settings">⚙️ <span>Sazlamalar</span></button>
+        <button type="button" class="active" data-page="feed">🏠 <span>Lenta</span></button>
+        <button type="button" data-page="classmates">👥 <span>Synpdaşlar</span><span class="count" id="peopleCount">0</span></button>
+        <button type="button" data-page="messages">💬 <span>Habarlaşyk</span><span class="count" id="chatUnreadCount">0</span></button>
+        <button type="button" data-page="groups">🏫 <span>Gurnaklar</span></button>
+        <button type="button" data-page="media">🖼️ <span>Media</span></button>
+        <button type="button" data-page="events">📅 <span>Duşuşyklar</span></button>
+        <button type="button" data-page="saved">🔖 <span>Saklananlar</span></button>
+        <button type="button" data-page="notifications">🔔 <span>Bildirişler</span></button>
+        <button type="button" data-page="settings">⚙️ <span>Sazlamalar</span></button>
       </nav>
       <div class="school-card">
         <small>MEKDEP GIŇIŞLIGI</small>
         <h3>Öde Abdullaýew adyndaky mekdep</h3>
         <p>2000-nji ýylyň uçurymlary</p>
-        <button data-page="groups">Giňişlige geç</button>
+        <button type="button" data-page="groups">Giňişlige geç</button>
       </div>
     </aside>
 
-    <main class="main">
+    <main class="main" id="mainContent" tabindex="-1">
       <section class="page active stack" id="page-feed">
+        <h1 class="sr-only">Klas habarlary</h1>
         <div class="card stories" id="stories"></div>
         <div class="card composer">
           <div class="composer-row">
             <img alt="Profil suraty" class="avatar current-user-avatar" src="https://i.pravatar.cc/100?img=12"/>
-            <button class="composer-open" id="composerOpen">Näme barada paýlaşmak isleýärsiňiz?</button>
+            <button type="button" class="composer-open" id="composerOpen">Näme barada paýlaşmak isleýärsiňiz?</button>
           </div>
           <div class="composer-actions">
-            <button data-compose="image">🖼️ Surat</button>
-            <button data-compose="video">🎥 Wideo</button>
-            <button data-page="events">📅 Duşuşyk</button>
+            <button type="button" data-compose="image">🖼️ Surat</button>
+            <button type="button" data-compose="video">🎥 Wideo</button>
+            <button type="button" data-page="events">📅 Duşuşyk</button>
           </div>
         </div>
         <div class="stack" id="feed"></div>
       </section>
 
       <section class="page card page-card" id="page-classmates">
-        <div class="page-head"><div><h1>Synpdaşlar</h1><p>Mekdep ýyllaryndaky dostlaryňyzy tapyň.</p></div><button class="primary" id="inviteBtn">+ Çagyr</button></div>
-        <div class="filter-row"><input id="peopleFilter" placeholder="Ady ýa-da şäheri boýunça süz..."/><select id="peopleStatus"><option value="all">Ählisi</option><option value="friend">Dostlar</option><option value="pending">Garaşylýar</option><option value="none">Täze adamlar</option></select></div>
+        <div class="page-head"><div><h1>Synpdaşlar</h1><p>Mekdep ýyllaryndaky dostlaryňyzy tapyň.</p></div><button type="button" class="primary" id="inviteBtn">+ Çagyr</button></div>
+        <div class="filter-row"><label class="sr-only" for="peopleFilter">Ady ýa-da şäheri boýunça süz</label><input id="peopleFilter" type="search" placeholder="Ady ýa-da şäheri boýunça süz..."/><label class="sr-only" for="peopleStatus">Dostluk ýagdaýy</label><select id="peopleStatus"><option value="all">Ählisi</option><option value="friend">Dostlar</option><option value="pending">Garaşylýar</option><option value="none">Täze adamlar</option></select></div>
         <div class="grid2" id="people"></div>
       </section>
 
       <section class="page card" id="page-messages">
         <div class="chat-shell">
-          <div class="chat-list"><div class="chat-title-row"><h1>Habarlar</h1><button class="mini" id="newChatBtn">＋</button></div><input class="chat-search" id="chatSearch" placeholder="Çat gözle..."/><div id="chatList"></div></div>
-          <div class="chat-main"><div class="chat-head" id="chatHead">Çaty saýlaň</div><div class="messages" id="messages"></div><form class="chat-form" id="chatForm"><input id="chatInput" autocomplete="off" maxlength="4000" placeholder="Habar ýazyň..."/><button>Ugrat</button></form></div>
+          <div class="chat-list"><div class="chat-title-row"><h1>Habarlar</h1><button class="mini" id="newChatBtn" type="button" aria-label="Täze çat başla">＋</button></div><label class="sr-only" for="chatSearch">Çat gözle</label><input class="chat-search" id="chatSearch" type="search" placeholder="Çat gözle..."/><div id="chatList"></div></div>
+          <div class="chat-main"><div class="chat-head" id="chatHead">Çaty saýlaň</div><div class="messages" id="messages" aria-live="polite"></div><form class="chat-form" id="chatForm"><label class="sr-only" for="chatInput">Habar ýazyň</label><input id="chatInput" type="text" autocomplete="off" maxlength="4000" placeholder="Habar ýazyň..."/><button type="submit">Ugrat</button></form></div>
         </div>
       </section>
 
       <section class="page card page-card" id="page-groups">
-        <div class="page-head"><div><h1>Gurnaklar we mekdepler</h1><p>Gyzyklanmalaryňyza laýyk jemgyýetlere goşulyň.</p></div><button class="primary" id="createGroupBtn">+ Gurnak döret</button></div>
+        <div class="page-head"><div><h1>Gurnaklar we mekdepler</h1><p>Gyzyklanmalaryňyza laýyk jemgyýetlere goşulyň.</p></div><button type="button" class="primary" id="createGroupBtn">+ Gurnak döret</button></div>
         <div class="grid2" id="groups"></div>
       </section>
 
       <section class="page card page-card" id="page-media">
-        <div class="page-head"><div><h1>Media merkezi</h1><p>Suratlar, albomlar we ýatlama wideolary.</p></div><button class="primary" id="uploadMediaBtn">+ Ýükle</button></div>
-        <div class="media-toolbar"><button class="mini active" data-media-filter="all">Ählisi</button><button class="mini" data-media-filter="image">Suratlar</button><button class="mini" data-media-filter="video">Wideolar</button></div>
+        <div class="page-head"><div><h1>Media merkezi</h1><p>Suratlar, albomlar we ýatlama wideolary.</p></div><button type="button" class="primary" id="uploadMediaBtn">+ Ýükle</button></div>
+        <div class="media-toolbar" role="group" aria-label="Media görnüşi"><button type="button" class="mini active" data-media-filter="all" aria-pressed="true">Ählisi</button><button type="button" class="mini" data-media-filter="image" aria-pressed="false">Suratlar</button><button type="button" class="mini" data-media-filter="video" aria-pressed="false">Wideolar</button></div>
         <div class="media-grid" id="mediaGrid"></div>
       </section>
 
       <section class="page card page-card" id="page-events">
-        <div class="page-head"><div><h1>Duşuşyklar</h1><p>Geljek çäreler we uçurymlar duşuşyklary.</p></div><button class="primary" id="createEventBtn">+ Çäre döret</button></div>
+        <div class="page-head"><div><h1>Duşuşyklar</h1><p>Geljek çäreler we uçurymlar duşuşyklary.</p></div><button type="button" class="primary" id="createEventBtn">+ Çäre döret</button></div>
         <div class="stack" id="events"></div>
       </section>
 
       <section class="page card page-card" id="page-saved"><div class="page-head"><div><h1>Saklananlar</h1><p>Soňkyra okamak üçin bellän postlaryňyz.</p></div></div><div class="stack" id="saved"></div></section>
-      <section class="page card page-card" id="page-notifications"><div class="page-head"><div><h1>Bildirişler</h1><p>Täze habarlar we jemgyýet hereketleri.</p></div><button class="secondary" id="readAll">Ählisini okalan et</button></div><div class="stack" id="notifications"></div></section>
+      <section class="page card page-card" id="page-notifications"><div class="page-head"><div><h1>Bildirişler</h1><p>Täze habarlar we jemgyýet hereketleri.</p></div><button type="button" class="secondary" id="readAll">Ählisini okalan et</button></div><div class="stack" id="notifications"></div></section>
 
       <section class="page card page-card" id="page-settings">
-        <div class="page-head"><div><h1>Sazlamalar</h1><p>Profil, gizlinlik, backend we maglumat dolandyryşy.</p></div><button class="primary" id="editProfileBtn">Profili üýtget</button></div>
+        <div class="page-head"><div><h1>Sazlamalar</h1><p>Profil, gizlinlik, backend we maglumat dolandyryşy.</p></div><button type="button" class="primary" id="editProfileBtn">Profili üýtget</button></div>
         <div class="sync-note"><span>☁️</span><div><b>Hybrid backend</b><small>Google girişden soň diňe Firebase/Firestore maglumatlary görkezilýär. Giriş ýok ýa-da backend elýetersiz bolsa ýerli režim dowam edýär.</small></div></div>
-        <div class="profile-summary"><img class="profile-large" id="profileAvatar" alt="Profil"/><div><h2 id="profileName"></h2><p id="profileBio"></p><small id="profileMeta"></small></div></div>
-        <div class="settings-row"><div><b>Cloudinary media</b><small>Surat we wideo üçin unsigned browser upload sazlamasy</small><span class="cloudinary-state missing" id="cloudinaryState">Cloud Name girizilmedik</span></div><button class="secondary" id="configureCloudinaryBtn">Sazla</button></div>
-        <div class="settings-row"><div><b>Bildirişler</b><small>Täze habarlar barada duýduryş al</small></div><button class="switch on" id="notifySwitch"><span></span></button></div>
-        <div class="settings-row"><div><b>Profiliň görünmegi</b><small>Maglumatlaryňyzy kim görüp biler</small></div><select id="privacy"><option value="classmates">Diňe synpdaşlar</option><option value="school">Mekdep agzalary</option><option value="public">Hemmeler</option></select></div>
-        <div class="settings-row"><div><b>Garaňky tema</b><small>Göz üçin amatly garaňky görnüş</small></div><button class="switch" id="darkSwitch"><span></span></button></div>
-        <div class="settings-row"><div><b>Maglumatlary eksport et</b><small>Ýerli režimdäki maglumatlaryň ätiýaç nusgasyny al</small></div><button class="secondary" id="exportBtn">JSON ýükläp al</button></div>
+        <div class="profile-summary"><img class="profile-large" id="profileAvatar" src="https://i.pravatar.cc/100?img=12" alt="Profil"><div><h2 id="profileName">Klas ulanyjysy</h2><p id="profileBio"></p><small id="profileMeta"></small></div></div>
+        <div class="settings-row"><div><b>Cloudinary media</b><small>Surat we wideo üçin unsigned browser upload sazlamasy</small><span class="cloudinary-state missing" id="cloudinaryState">Cloud Name girizilmedik</span></div><button type="button" class="secondary" id="configureCloudinaryBtn">Sazla</button></div>
+        <div class="settings-row"><div><b>Ýerli bildirişler</b><small>Girişsiz demo režimindäki brauzer bildirişlerini dolandyrýar</small></div><button class="switch on" id="notifySwitch" type="button" role="switch" aria-label="Ýerli bildirişler" aria-checked="true"><span></span></button></div>
+        <div class="settings-row"><div><b>Profiliň görünmegi</b><small>Häzirki wagtda profiller diňe Google bilen giriş eden Klas agzalaryna görünýär</small></div><select id="privacy" aria-label="Profiliň görünmegi" disabled><option value="school">Klas agzalary</option></select></div>
+        <div class="settings-row"><div><b>Garaňky tema</b><small>Göz üçin amatly garaňky görnüş</small></div><button class="switch" id="darkSwitch" type="button" role="switch" aria-label="Garaňky tema" aria-checked="false"><span></span></button></div>
+        <div class="settings-row"><div><b>Maglumatlary eksport et</b><small>Ýerli režimdäki maglumatlaryň ätiýaç nusgasyny al</small></div><button type="button" class="secondary" id="exportBtn">JSON ýükläp al</button></div>
         <div class="settings-row"><div><b>Maglumatlary import et</b><small>Öňki ýerli ätiýaç nusgany dikelt</small></div><label class="secondary file-label">JSON saýla<input type="file" id="importInput" accept="application/json"/></label></div>
-        <div class="settings-row danger-row"><div><b>Ýerli maglumatlary arassala</b><small>Diňe brauzerdäki fallback maglumatlaryny başlangyç ýagdaýa getirýär</small></div><button class="danger" id="resetBtn">Arassala</button></div>
+        <div class="settings-row danger-row"><div><b>Ýerli maglumatlary arassala</b><small>Diňe brauzerdäki fallback maglumatlaryny başlangyç ýagdaýa getirýär</small></div><button type="button" class="danger" id="resetBtn">Arassala</button></div>
       </section>
     </main>
 
-    <aside class="rightcol">
-      <div class="card side-card"><div class="side-title"><b>Tanap biljekleriňiz</b><button class="mini" data-page="classmates">Ählisi</button></div><div id="suggestions"></div></div>
+    <aside class="rightcol" aria-label="Goşmaça maglumatlar">
+      <div class="card side-card"><div class="side-title"><b>Tanap biljekleriňiz</b><button type="button" class="mini" data-page="classmates">Ählisi</button></div><div id="suggestions"></div></div>
       <div class="card side-card"><div class="side-title"><b>Onlaýn synpdaşlar</b><span id="onlineCount">● 0</span></div><div class="online" id="onlinePeople"></div></div>
-      <div class="card side-card"><div class="side-title"><b>Ýakyn duşuşyk</b><button class="mini" data-page="events">Aç</button></div><div id="nextEvent"></div></div>
+      <div class="card side-card"><div class="side-title"><b>Ýakyn duşuşyk</b><button type="button" class="mini" data-page="events">Aç</button></div><div id="nextEvent"></div></div>
     </aside>
   </div>
 
-  <div class="modal" id="appModal" aria-hidden="true"><div class="modal-card"><div class="modal-head"><h2 id="modalTitle">Penjire</h2><button class="close" id="modalClose">✕</button></div><div id="modalBody"></div><div class="modal-footer" id="modalFooter"></div></div></div>
-  <div class="lightbox" id="lightbox"><button class="lightbox-close" id="lightboxClose">✕</button><div id="lightboxContent"></div></div>
+  <div class="modal" id="appModal"><div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="modalTitle" tabindex="-1"><div class="modal-head"><h2 id="modalTitle">Penjire</h2><button class="close" id="modalClose" type="button" aria-label="Penjiräni ýap">✕</button></div><div id="modalBody"></div><div class="modal-footer" id="modalFooter"></div></div></div>
+  <div class="lightbox" id="lightbox"><div class="lightbox-dialog" role="dialog" aria-modal="true" aria-label="Media görnüşi" tabindex="-1"><button class="lightbox-close" id="lightboxClose" type="button" aria-label="Media görnüşini ýap">✕</button><div id="lightboxContent"></div></div></div>
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
   <input class="hidden" type="file" id="hiddenImageInput" accept="image/*"/>
   <noscript>Bu programma üçin JavaScript işjeň bolmaly.</noscript>
-  <script src="./klas-config.js?v=20260722-dynamic1"></script>
-  <script src="./klas-v4-1.js?v=20260722-dynamic1"></script>
-  <script src="./klas-v4-2.js?v=20260722-dynamic1"></script>
-  <script src="./klas-v4-3.js?v=20260722-dynamic1"></script>
-  <script src="./klas-v4-4.js?v=20260722-dynamic1"></script>
-  <script src="./klas-bridge.js?v=20260722-dynamic1"></script>
-  <script type="module" src="./klas-backend-bootstrap.js?v=20260722-dynamic1"></script>
+  <script src="./klas-config.js?v=20260722-audit1"></script>
+  <script src="./klas-v4-1.js?v=20260722-audit1"></script>
+  <script src="./klas-v4-2.js?v=20260722-audit1"></script>
+  <script src="./klas-v4-3.js?v=20260722-audit1"></script>
+  <script src="./klas-v4-4.js?v=20260722-audit1"></script>
+  <script src="./klas-bridge.js?v=20260722-audit1"></script>
+  <script type="module" src="./klas-backend-bootstrap.js?v=20260722-audit1"></script>
 </body>
 </html>

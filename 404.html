@@ -1,4 +1,4 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="tk">
 <head>
   <meta charset="utf-8">
@@ -7,9 +7,9 @@
   <title>Klas — ugrukdyrylýar</title>
 </head>
 <body>
-  <p>Klas baş sahypasyna ugrukdyrylýar…</p>
+  <p>Klas baş sahypasyna ugrukdyrylýar… <a href="/klas/">Baş sahypany aç</a></p>
   <script>
-    const base = location.pathname.toLowerCase().includes('/klas/') ? location.pathname.split('/').slice(0, 2).join('/') + '/' : './';
+    const base = location.hostname === 'maksatdowletow.github.io' ? '/klas/' : './';
     location.replace(`${base}${location.search}#${(location.hash || '#feed').slice(1)}`);
   </script>
 </body>

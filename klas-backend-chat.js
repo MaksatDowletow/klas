@@ -95,7 +95,7 @@ function updateChatChrome(){
       : chat.lastSeen
         ? `Soňky gezek ${chat.lastSeen}`
         : 'Oflayn';
-  head.innerHTML = `<div class="chat-head-person"><img class="avatar" src="${chat.avatar || ''}" alt=""><span><b>${escapeHtml(chat.name || 'Klas çat')}</b><small class="${chat.online ? 'online' : ''}">${escapeHtml(presence)}</small></span></div>${chat.remote && chat.recipientId ? '<button class="video-call-start" id="videoCallBtn" type="button" aria-label="Wideo jaň başlat">📹 <span>Wideoçat</span></button>' : ''}`;
+  head.innerHTML = `<div class="chat-head-person"><img class="avatar" src="${escapeHtml(chat.avatar || '')}" alt=""><span><b>${escapeHtml(chat.name || 'Klas çat')}</b><small class="${chat.online ? 'online' : ''}">${escapeHtml(presence)}</small></span></div>${chat.remote && chat.recipientId ? '<button class="video-call-start" id="videoCallBtn" type="button" aria-label="Wideo jaň başlat">📹 <span>Wideoçat</span></button>' : ''}`;
   if (typing) typing.textContent = chat.typing ? `${chat.name} ýazýar…` : '';
 }
 

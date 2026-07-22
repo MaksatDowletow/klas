@@ -45,6 +45,12 @@ jobs:
         with:
           node-version: '20'
 
+      - name: Set up Java for Firestore validation
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
       - name: Validate Firebase configuration
         shell: bash
         run: |
