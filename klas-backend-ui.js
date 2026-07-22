@@ -1,5 +1,5 @@
 import { runtime, bridge, $, safe, toast, login, logout, cloudConfig, cloudReady, saveCloudConfig, updateCloudState, uploadMedia, saveProfile, createPost, toggleLike, addComment, deletePost } from './klas-backend-core.js';
-import { ensureConversation, sendMessage } from './klas-backend-chat.js';
+import { ensureConversation, sendMessage } from './klas-backend-chat.js?v=20260722-live1';
 import { createGroup, toggleGroup, deleteGroup, createEvent, toggleEvent, deleteEvent, createMedia, deleteMedia, createStory, deleteStory } from './klas-backend-community.js';
 import { toggleFriendship, notifyPostAuthor, markRead, markAllRead } from './klas-backend-notifications.js';
 
@@ -30,6 +30,6 @@ const md=t.closest('[data-delete-media]');if(md){const v=bridge.getState().media
 const sd=t.closest('[data-delete-story]');if(sd){const v=bridge.getState().stories.find(x=>x.id===sd.dataset.deleteStory);if(v?.remote){e.preventDefault();e.stopImmediatePropagation();if(confirm('Pursaty aýyrmalymy?'))await deleteStory(v.id);return}}
 },true);
 
-document.addEventListener('submit',async e=>{if(!runtime.user)return;const f=e.target;if(f.matches('[data-comment-form]')){const p=bridge.getPost(f.dataset.commentForm);if(p?.remote){e.preventDefault();e.stopImmediatePropagation();const i=f.querySelector('input'),text=i.value.trim();if(text){await addComment(p.id,text);await notifyPostAuthor(p.id,'comment',`${runtime.profile?.shortName||'Bir ulanyjy'} postuňyza teswir ýazdy`,'💬');i.value=''}return}}if(f.matches('#chatForm')){const c=bridge.getActiveChat();if(c?.remote){e.preventDefault();e.stopImmediatePropagation();const i=$('#chatInput'),text=i.value.trim();if(text){await sendMessage(c.id,text);i.value=''}return}}},true);
+document.addEventListener('submit',async e=>{if(!runtime.user)return;const f=e.target;if(f.matches('[data-comment-form]')){const p=bridge.getPost(f.dataset.commentForm);if(p?.remote){e.preventDefault();e.stopImmediatePropagation();const i=f.querySelector('input'),text=i.value.trim();if(text){await addComment(p.id,text);await notifyPostAuthor(p.id,'comment',`${runtime.profile?.shortName||'Bir ulanyjy'} postuňyza teswir ýazdy`,'💬');i.value=''}return}}if(f.matches('#chatForm')){const c=bridge.getActiveChat();if(c?.remote){e.preventDefault();e.stopImmediatePropagation();const i=$('#chatInput'),text=i.value.trim();if(text){try{await sendMessage(c.id,text);i.value=''}catch(error){toast(error.message||'Habar ugradylmady')}}return}}},true);
 
 window.KlasBackend=Object.freeze({login,logout,uploadMedia,cloudReady,cloudSettings,createPost,saveProfile,ensureConversation,sendMessage});

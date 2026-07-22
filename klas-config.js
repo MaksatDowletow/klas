@@ -17,8 +17,17 @@ window.KLAS_CONFIG = Object.freeze({
     maxImageBytes: 10 * 1024 * 1024,
     maxVideoBytes: 50 * 1024 * 1024
   }),
+  rtc: Object.freeze({
+    iceServers: Object.freeze([
+      Object.freeze({ urls: Object.freeze([
+        'stun:stun.l.google.com:19302',
+        'stun:stun1.l.google.com:19302'
+      ]) })
+    ]),
+    ringTimeoutMs: 45000
+  }),
   app: Object.freeze({
-    version: '5.0.0',
+    version: '5.1.0',
     firebaseSdkVersion: '12.16.0',
     allowLocalFallback: true
   })
