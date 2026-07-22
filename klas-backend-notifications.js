@@ -70,3 +70,4 @@ function start() {
   }, error => handleError(error, 'Dostluklar ýüklenmedi')));
 }
 window.addEventListener('klas-auth', event => event.detail.user ? start() : clear());
+if (runtime.user) start();
