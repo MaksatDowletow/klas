@@ -1,13 +1,28 @@
 const statusNode = document.getElementById('backendStatus');
 const release = '20260722-dynamic1';
-const styleHref = `klas-livechat.css?v=${release}`;
+const styleHref = `./klas-livechat.css?v=${release}`;
+const backendFiles = [
+  './klas-backend-core.js',
+  './klas-backend-chat.js',
+  './klas-backend-community.js',
+  './klas-backend-notifications.js',
+  './klas-backend-ui.js',
+  './klas-backend-video.js',
+  './klas-backend-realtime.js'
+];
+
 if (![...document.styleSheets].some(sheet => sheet.href?.includes('klas-livechat.css'))) {
   const link = document.createElement('link');
   link.rel = 'stylesheet';
   link.href = styleHref;
   document.head.appendChild(link);
 }
+
 try {
+  await Promise.all(backendFiles.map(async file => {
+    const response = await fetch(`${file}?v=${release}`, { cache: 'reload' });
+    if(!response.ok) throw new Error(`${file} ýüklenmedi: HTTP ${response.status}`);
+  }));
   await import(`./klas-backend-ui.js?v=${release}`);
   await import(`./klas-backend-video.js?v=${release}`);
   await import(`./klas-backend-realtime.js?v=${release}`);
