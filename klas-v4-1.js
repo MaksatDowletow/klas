@@ -9,12 +9,29 @@ const nowLabel = () => new Intl.DateTimeFormat('tk-TM', {hour:'2-digit', minute:
 const avatarUrl = i => `https://i.pravatar.cc/160?img=${i}`;
 const esc = (v='') => String(v).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const clone = value => JSON.parse(JSON.stringify(value));
+const DATA_IMAGE_PREFIX = /^data:image\/(?:png|jpe?g|gif|webp|avif);base64,/i;
+
+function normalizeLocalUrl(value, { allowEmpty = true, allowDataImage = false } = {}){
+  const input = String(value || '').trim();
+  if (!input && allowEmpty) return '';
+  if (allowDataImage && DATA_IMAGE_PREFIX.test(input)) return input;
+  let parsed;
+  try { parsed = new URL(input); }
+  catch { throw new Error('URL salgysy nädogry.'); }
+  if (parsed.protocol !== 'https:') throw new Error('Diňe HTTPS salgysy kabul edilýär.');
+  return parsed.href;
+}
+
+function safeLocalUrl(value, options){
+  try { return normalizeLocalUrl(value, options); }
+  catch { return ''; }
+}
 
 const defaultState = {
   version: APP_VERSION,
   dark: false,
   notify: true,
-  privacy: 'classmates',
+  privacy: 'school',
   activeChat: 'chat-aylar',
   mediaFilter: 'all',
   currentUser: {id:'me', name:'Maksat Dowletow', shortName:'Maksat', role:'Administrator', city:'Kerki', bio:'2000-nji ýyl uçurymy. Klas jemgyýetiniň administratory.', avatar:avatarUrl(12)},
@@ -68,8 +85,32 @@ function normalizeState(raw){
   const s = {...clone(defaultState), ...(raw || {})};
   s.currentUser = {...clone(defaultState.currentUser), ...(raw?.currentUser || {})};
   for(const key of ['stories','posts','people','groups','chats','notifications','media','events']) if(!Array.isArray(s[key])) s[key] = clone(defaultState[key]);
-  s.posts = s.posts.map(p => ({image:'',video:'',comments:[],liked:false,saved:false,likes:0,...p,comments:Array.isArray(p.comments)?p.comments:[]}));
-  s.chats = s.chats.map(c => ({unread:0,messages:[],...c,messages:Array.isArray(c.messages)?c.messages:[]}));
+  s.currentUser.avatar = safeLocalUrl(s.currentUser.avatar, { allowDataImage: true }) || clone(defaultState.currentUser.avatar);
+  s.stories = s.stories.map(item => ({
+    ...item,
+    avatar: safeLocalUrl(item.avatar, { allowDataImage: true }),
+    media: safeLocalUrl(item.media, { allowDataImage: true })
+  }));
+  s.posts = s.posts.map(p => ({
+    image:'', video:'', comments:[], liked:false, saved:false, likes:0, ...p,
+    avatar: safeLocalUrl(p.avatar, { allowDataImage: true }),
+    image: safeLocalUrl(p.image, { allowDataImage: true }),
+    video: safeLocalUrl(p.video),
+    comments: (Array.isArray(p.comments) ? p.comments : []).map(comment => ({
+      ...comment,
+      avatar: safeLocalUrl(comment.avatar, { allowDataImage: true })
+    }))
+  }));
+  s.people = s.people.map(person => ({ ...person, avatar: safeLocalUrl(person.avatar, { allowDataImage: true }) }));
+  s.chats = s.chats.map(c => ({
+    unread:0, messages:[], ...c,
+    avatar: safeLocalUrl(c.avatar, { allowDataImage: true }),
+    messages:Array.isArray(c.messages)?c.messages:[]
+  }));
+  s.media = s.media.map(item => {
+    const type = item.type === 'video' ? 'video' : 'image';
+    return { ...item, type, src: safeLocalUrl(item.src, { allowDataImage: type === 'image' }) };
+  }).filter(item => item.src);
   s.version = APP_VERSION;
   return s;
 }
@@ -141,7 +182,9 @@ function showPage(requestedName, updateHash=true){
   $(`#page-${name}`)?.classList.add('active');
   $$('[data-page]').forEach(el=>el.classList.toggle('active',el.dataset.page===name));
   $('#sidebar').classList.remove('open');
+  $('#menuBtn').setAttribute('aria-expanded','false');
   $('#searchResults').classList.add('hidden');
+  $('#searchInput').setAttribute('aria-expanded','false');
   if(updateHash && location.hash !== `#${name}`){
     history.pushState({page:name},'',`${location.pathname}${location.search}#${name}`);
   }
@@ -151,15 +194,44 @@ function showPage(requestedName, updateHash=true){
 }
 function routeFromHash(){ showPage((location.hash||'#feed').slice(1),false); }
 
+let modalReturnFocus = null;
+let lightboxReturnFocus = null;
+function updateOverlayState(){
+  document.body.classList.toggle('overlay-open', $('#appModal').classList.contains('open') || $('#lightbox').classList.contains('open'));
+}
 function openModal({title,body,confirmText='Sakla',cancelText='Ýatyr',onConfirm,hideConfirm=false}){
+  modalReturnFocus = document.activeElement;
   $('#modalTitle').textContent=title;
   $('#modalBody').innerHTML=body;
-  $('#modalFooter').innerHTML=`<button class="secondary" data-modal-cancel>${esc(cancelText)}</button>${hideConfirm?'':`<button class="primary" data-modal-confirm>${esc(confirmText)}</button>`}`;
+  $('#modalFooter').innerHTML=`<button class="secondary" type="button" data-modal-cancel>${esc(cancelText)}</button>${hideConfirm?'':`<button class="primary" type="button" data-modal-confirm>${esc(confirmText)}</button>`}`;
   $('#appModal').classList.add('open'); $('#appModal').setAttribute('aria-hidden','false');
+  updateOverlayState();
   $('[data-modal-cancel]').onclick=closeModal;
   const confirm=$('[data-modal-confirm]'); if(confirm) confirm.onclick=async()=>{ try{ await onConfirm?.(confirm); }catch(e){ toast(e.message||'Ýalňyşlyk ýüze çykdy'); } };
-  setTimeout(()=>$('#modalBody input, #modalBody textarea')?.focus(),50);
+  setTimeout(() => ($('#modalBody input, #modalBody textarea, #modalBody select, [data-modal-confirm]') || $('.modal-card'))?.focus(), 50);
 }
-function closeModal(){ $('#appModal').classList.remove('open'); $('#appModal').setAttribute('aria-hidden','true'); }
-function openLightbox(html){ $('#lightboxContent').innerHTML=html; $('#lightbox').classList.add('open'); }
-function closeLightbox(){ $('#lightbox').classList.remove('open'); $('#lightboxContent').innerHTML=''; }
+function closeModal(){
+  const modal = $('#appModal');
+  if(!modal.classList.contains('open')) return;
+  modal.classList.remove('open'); modal.setAttribute('aria-hidden','true');
+  updateOverlayState();
+  modalReturnFocus?.focus?.();
+  modalReturnFocus = null;
+}
+function openLightbox(html){
+  lightboxReturnFocus = document.activeElement;
+  $('#lightboxContent').innerHTML=html;
+  $('#lightbox').classList.add('open');
+  $('#lightbox').setAttribute('aria-hidden','false');
+  updateOverlayState();
+  setTimeout(() => $('.lightbox-dialog')?.focus(), 0);
+}
+function closeLightbox(){
+  const lightbox = $('#lightbox');
+  if(!lightbox.classList.contains('open')) return;
+  lightbox.classList.remove('open'); lightbox.setAttribute('aria-hidden','true');
+  $('#lightboxContent').innerHTML='';
+  updateOverlayState();
+  lightboxReturnFocus?.focus?.();
+  lightboxReturnFocus = null;
+}

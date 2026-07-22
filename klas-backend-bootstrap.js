@@ -1,15 +1,6 @@
 const statusNode = document.getElementById('backendStatus');
-const release = '20260722-dynamic1';
+const release = '20260722-audit1';
 const styleHref = `./klas-livechat.css?v=${release}`;
-const backendFiles = [
-  './klas-backend-core.js',
-  './klas-backend-chat.js',
-  './klas-backend-community.js',
-  './klas-backend-notifications.js',
-  './klas-backend-ui.js',
-  './klas-backend-video.js',
-  './klas-backend-realtime.js'
-];
 
 if (![...document.styleSheets].some(sheet => sheet.href?.includes('klas-livechat.css'))) {
   const link = document.createElement('link');
@@ -19,13 +10,11 @@ if (![...document.styleSheets].some(sheet => sheet.href?.includes('klas-livechat
 }
 
 try {
-  await Promise.all(backendFiles.map(async file => {
-    const response = await fetch(`${file}?v=${release}`, { cache: 'reload' });
-    if(!response.ok) throw new Error(`${file} ýüklenmedi: HTTP ${response.status}`);
-  }));
-  await import(`./klas-backend-ui.js?v=${release}`);
-  await import(`./klas-backend-video.js?v=${release}`);
-  await import(`./klas-backend-realtime.js?v=${release}`);
+  await Promise.all([
+    import(`./klas-backend-ui.js?v=${release}`),
+    import(`./klas-backend-video.js?v=${release}`),
+    import(`./klas-backend-realtime.js?v=${release}`)
+  ]);
 } catch (error) {
   console.error('Klas backend başlangyjy başartmady', error);
   window.KlasBridge?.setCloudMode(false);

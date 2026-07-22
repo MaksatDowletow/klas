@@ -16,7 +16,6 @@ import {
   doc,
   setDoc,
   getDoc,
-  getDocs,
   addDoc,
   deleteDoc,
   deleteField,
@@ -264,6 +263,9 @@ export async function saveProfile(data){
   const clean = Object.fromEntries(Object.entries(data).filter(([key]) => allowed.includes(key)));
   if ('avatarURL' in clean) clean.avatarURL = normalizeHttpUrl(clean.avatarURL);
   if (String(clean.fullName || '').length > 100) throw new Error('Doly at 100 belgiden uzyn bolmaly däl.');
+  if (String(clean.shortName || '').length > 30) throw new Error('Gysga at 30 belgiden uzyn bolmaly däl.');
+  if (String(clean.city || '').length > 80) throw new Error('Şäher 80 belgiden uzyn bolmaly däl.');
+  if (String(clean.profession || '').length > 80) throw new Error('Hünär 80 belgiden uzyn bolmaly däl.');
   if (String(clean.bio || '').length > 500) throw new Error('Bio 500 belgiden uzyn bolmaly däl.');
   await setDoc(doc(db, 'profiles', runtime.user.uid), {
     ...clean,
@@ -355,21 +357,6 @@ export async function deletePost(id){
   await deleteDoc(doc(db, 'posts', id));
 }
 
-async function loadComments(reference){
-  const snapshot = await getDocs(query(
-    collection(reference, 'comments'),
-    orderBy('createdAt', 'asc'),
-    limit(30)
-  ));
-  return snapshot.docs.map(item => ({
-    id: item.id,
-    author: item.data().authorName || 'Ulanyjy',
-    avatar: item.data().authorAvatar || '',
-    text: item.data().text || '',
-    time: timeLabel(item.data().createdAt)
-  }));
-}
-
 async function isLiked(id){
   return runtime.user
     ? (await getDoc(doc(db, 'posts', id, 'likes', runtime.user.uid))).exists()
@@ -380,9 +367,9 @@ function subscribePosts(){
   runtime.subscriptions.push(onSnapshot(
     query(collection(db, 'posts'), orderBy('createdAt', 'desc'), limit(25)),
     async snapshot => {
+      runtime.posts = new Map(snapshot.docs.map(item => [item.id, { id: item.id, ...item.data() }]));
       const list = await Promise.all(snapshot.docs.map(async item => {
         const data = item.data();
-        runtime.posts.set(item.id, { id: item.id, ...data });
         return {
           id: item.id,
           remote: true,
@@ -396,7 +383,7 @@ function subscribePosts(){
           image: data.imageURL || '',
           video: data.videoURL || '',
           likes: Number(data.likesCount) || 0,
-          comments: await loadComments(item.ref).catch(() => []),
+          comments: [],
           liked: await isLiked(item.id).catch(() => false),
           saved: false
         };

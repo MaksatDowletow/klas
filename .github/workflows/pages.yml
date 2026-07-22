@@ -33,6 +33,7 @@ jobs:
             index.html
             klas-v4.css
             klas-backend.css
+            klas-livechat.css
             klas-v4-1.js
             klas-v4-2.js
             klas-v4-3.js
@@ -43,20 +44,22 @@ jobs:
             klas-backend-core.js
             klas-backend-ui.js
             klas-backend-chat.js
+            klas-backend-community.js
+            klas-backend-notifications.js
             klas-backend-video.js
             klas-backend-realtime.js
+            404.html
+            health.json
           )
           for file in "${required[@]}"; do
             test -s "$file" || { echo "Missing required runtime file: $file"; exit 1; }
           done
           grep -q "klas-backend-bootstrap.js" index.html
           grep -q "klas-backend-realtime.js" klas-backend-bootstrap.js
-          node --check klas-v4-1.js
-          node --check klas-v4-2.js
-          node --check klas-v4-3.js
-          node --check klas-v4-4.js
-          node --check klas-bridge.js
-          node --check klas-config.js
+          for file in klas-*.js; do node --check "$file"; done
+          grep -q 'https://maksatdowletow.github.io/klas/' index.html
+          ! grep -q 'github.io/Klas/' index.html
+          grep -q "version: '5.3.0'" klas-config.js
 
       - name: Build clean Pages artifact
         shell: bash
@@ -64,17 +67,34 @@ jobs:
           set -euo pipefail
           rm -rf _site
           mkdir -p _site
-          find . -maxdepth 1 -type f \( \
-            -name '*.html' -o \
-            -name 'klas-*.js' -o \
-            -name 'klas-*.css' -o \
-            -name 'health.json' \
-          \) -exec cp '{}' _site/ \;
+          runtime=(
+            index.html
+            404.html
+            health.json
+            klas-v4.css
+            klas-backend.css
+            klas-livechat.css
+            klas-config.js
+            klas-v4-1.js
+            klas-v4-2.js
+            klas-v4-3.js
+            klas-v4-4.js
+            klas-bridge.js
+            klas-backend-bootstrap.js
+            klas-backend-core.js
+            klas-backend-ui.js
+            klas-backend-chat.js
+            klas-backend-community.js
+            klas-backend-notifications.js
+            klas-backend-video.js
+            klas-backend-realtime.js
+          )
+          cp "${runtime[@]}" _site/
           touch _site/.nojekyll
           cat > _site/release.json <<EOF
           {
             "app": "Klas",
-            "version": "5.2.0",
+            "version": "5.3.0",
             "commit": "${GITHUB_SHA}",
             "dynamicPages": true,
             "realtimeComments": true

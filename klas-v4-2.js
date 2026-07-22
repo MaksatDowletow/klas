@@ -9,7 +9,14 @@ function updateBadges(){
   $('#chatUnreadCount').textContent=unreadChats;
   $('#peopleCount').textContent=state.people.length;
 }
-function applyTheme(){ document.body.classList.toggle('dark',state.dark); $('#themeBtn').textContent=state.dark?'☀️':'🌙'; $('#darkSwitch').classList.toggle('on',state.dark); }
+function applyTheme(){
+  document.body.classList.toggle('dark',state.dark);
+  $('#themeBtn').textContent=state.dark?'☀️':'🌙';
+  $('#themeBtn').setAttribute('aria-label', state.dark ? 'Ýagty temany aç' : 'Garaňky temany aç');
+  $('#darkSwitch').classList.toggle('on',state.dark);
+  $('#darkSwitch').setAttribute('aria-checked', String(state.dark));
+  $('#themeColor')?.setAttribute('content', state.dark ? '#0b1320' : '#2563eb');
+}
 
 function renderStories(){
   const items=[{id:'add',own:true,name:'Täze pursat',avatar:state.currentUser.avatar},...state.stories.filter(s=>s.id!=='story-me')];
@@ -19,7 +26,7 @@ function renderStories(){
 }
 function openStoryComposer(){
   openModal({title:'Täze pursat goş',confirmText:'Paýlaş',body:`<div class="form-grid"><div class="field"><label>Gysga ýazgy</label><textarea id="storyText" placeholder="Pursatyňyzy beýan ediň..."></textarea></div><div class="field"><label>Surat</label><input id="storyFile" type="file" accept="image/*"><div class="field-help">Ýerli saklanyş üçin iň köp 1.5 MB.</div></div><div class="field"><label>Ýa-da surat URL-si</label><input id="storyUrl" type="url" placeholder="https://..."></div></div>`,onConfirm:async()=>{
-    const file=$('#storyFile').files[0]; const url=$('#storyUrl').value.trim(); const media=file?await fileToDataUrl(file):url;
+    const file=$('#storyFile').files[0]; const url=$('#storyUrl').value.trim(); const media=file?await fileToDataUrl(file):normalizeLocalUrl(url);
     if(!media) throw new Error('Surat saýlaň ýa-da URL giriziň.');
     state.stories.unshift({id:uid(),ownerId:'me',name:state.currentUser.shortName||'Men',avatar:state.currentUser.avatar,text:$('#storyText').value.trim(),media,viewed:false,own:true});
     save(); renderStories(); closeModal(); toast('Pursat paýlaşyldy');
@@ -28,8 +35,10 @@ function openStoryComposer(){
 function viewStory(id){ const story=state.stories.find(s=>s.id===id); if(!story)return; story.viewed=true; save(); renderStories(); openLightbox(`<div class="story-view"><img src="${esc(story.media)}" alt="${esc(story.name)}"><h2>${esc(story.name)}</h2><p>${esc(story.text||'')}</p>${story.own?`<button class="danger" data-delete-story="${esc(story.id)}">Pursaty aýyr</button>`:''}</div>`); $('[data-delete-story]')?.addEventListener('click',()=>{if(confirm('Bu pursaty aýyrmalymy?')){state.stories=state.stories.filter(s=>s.id!==id);save();renderStories();closeLightbox();toast('Pursat aýryldy')}}); }
 
 function mediaMarkup(p){
-  if(p.image) return `<img class="post-image" src="${esc(p.image)}" alt="Post suraty" loading="lazy">`;
-  if(p.video){ return isDirectVideo(p.video)?`<video class="post-video" controls preload="metadata" src="${esc(p.video)}"></video>`:`<a class="post-video-link" target="_blank" rel="noopener" href="${esc(p.video)}">🎥 Wideony aç</a>`; }
+  const image = safeLocalUrl(p.image, { allowDataImage: true });
+  const video = safeLocalUrl(p.video);
+  if(image) return `<img class="post-image" src="${esc(image)}" alt="Post suraty" loading="lazy">`;
+  if(video){ return isDirectVideo(video)?`<video class="post-video" controls preload="metadata" src="${esc(video)}"></video>`:`<a class="post-video-link" target="_blank" rel="noopener noreferrer" href="${esc(video)}">🎥 Wideony aç</a>`; }
   return '';
 }
 function postHTML(p){
@@ -52,8 +61,8 @@ function openComposer(mode='text'){
   const label=mode==='video'?'Wideo URL-si':mode==='image'?'Surat':'Goşundy';
   openModal({title:'Täze post',confirmText:'Çap et',body:`<div class="form-grid"><div class="field"><label>Post teksti</label><textarea id="postText" maxlength="3000" placeholder="Pikiriňizi, habaryňyzy ýa-da ýatlamaňyzy ýazyň..."></textarea></div>${mode==='image'?`<div class="field"><label>${label}</label><input id="postFile" type="file" accept="image/*"><div class="field-help">Iň köp 1.5 MB; brauzeriňizde ýerli saklanar.</div></div><div class="field"><label>Ýa-da surat URL-si</label><input id="postMediaUrl" type="url" placeholder="https://..."></div>`:mode==='video'?`<div class="field"><label>${label}</label><input id="postMediaUrl" type="url" placeholder="https://.../video.mp4 ýa-da wideo sahypasy"><div class="field-help">Göni MP4/WebM salgysy player-de açylar, beýleki baglanyşyklar täze sahypada açylar.</div></div>`:''}</div>`,onConfirm:async()=>{
     const text=$('#postText').value.trim(); let image='',video='';
-    if(mode==='image'){const file=$('#postFile').files[0];image=file?await fileToDataUrl(file):$('#postMediaUrl').value.trim();}
-    if(mode==='video') video=$('#postMediaUrl').value.trim();
+    if(mode==='image'){const file=$('#postFile').files[0];image=file?await fileToDataUrl(file):normalizeLocalUrl($('#postMediaUrl').value.trim());}
+    if(mode==='video') video=normalizeLocalUrl($('#postMediaUrl').value.trim());
     if(!text && !image && !video) throw new Error('Post üçin tekst ýa-da media goşuň.');
     state.posts.unshift({id:uid(),ownerId:'me',author:state.currentUser.name,role:state.currentUser.role,avatar:state.currentUser.avatar,time:'häzir',text,image,video,likes:0,liked:false,saved:false,comments:[]});
     if(image) state.media.unshift({id:uid(),type:'image',src:image,title:text.slice(0,40)||'Täze surat',ownerId:'me'});
@@ -66,11 +75,10 @@ function personButtonText(status){return status==='friend'?'Dost ✓':status==='
 function renderPeople(){
   const q=$('#peopleFilter')?.value.toLowerCase().trim()||''; const status=$('#peopleStatus')?.value||'all';
   const list=state.people.filter(p=>(status==='all'||p.status===status)&&(!q||`${p.name} ${p.city} ${p.job}`.toLowerCase().includes(q)));
-  $('#people').innerHTML=list.map(p=>`<div class="person"><img class="avatar" src="${esc(p.avatar)}" alt="${esc(p.name)}"><div class="person-info"><b>${esc(p.name)} ${p.online?'🟢':''}</b><small>${esc(p.city)} · ${esc(p.job)}</small></div><div class="person-actions"><button class="mini" data-message-person="${esc(p.id)}">💬</button><button class="mini" data-friend="${esc(p.id)}">${personButtonText(p.status)}</button></div></div>`).join('')||'<div class="empty">Netije tapylmady.</div>';
+  $('#people').innerHTML=list.map(p=>`<div class="person"><img class="avatar" src="${esc(p.avatar)}" alt="${esc(p.name)}"><div class="person-info"><b>${esc(p.name)} ${p.online?'🟢':''}</b><small>${esc(p.city)} · ${esc(p.job)}</small></div><div class="person-actions"><button class="mini" data-message-person="${esc(p.id)}" aria-label="${esc(p.name)} bilen habarlaş">💬</button><button class="mini" data-friend="${esc(p.id)}" aria-label="${esc(p.name)}: dostluk ýagdaýy">${personButtonText(p.status)}</button></div></div>`).join('')||'<div class="empty">Netije tapylmady.</div>';
   $$('[data-friend]').forEach(b=>b.onclick=()=>toggleFriend(b.dataset.friend)); $$('[data-message-person]').forEach(b=>b.onclick=()=>startChatWithPerson(b.dataset.messagePerson));
 }
 function toggleFriend(id){const p=state.people.find(x=>x.id===id);if(!p)return;if(p.status==='none'){p.status='pending';toast('Synpdaşlyk haýyşy ugradyldy')}else if(p.status==='pending'){p.status='none';toast('Haýyş ýatyryldy')}else{if(confirm(`${p.name} dostlaryňyzdan aýrylsynmy?`)){p.status='none';toast('Dostlardan aýryldy')}else return;}save();renderPeople();renderSuggestions();}
 function startChatWithPerson(id){const p=state.people.find(x=>x.id===id);if(!p)return;let chat=state.chats.find(c=>c.personId===id);if(!chat){chat={id:uid(),personId:id,name:p.name,avatar:p.avatar,preview:'Täze çat',unread:0,messages:[]};state.chats.unshift(chat);}state.activeChat=chat.id;chat.unread=0;save();renderChats();renderMessages();showPage('messages');}
-function renderSuggestions(){const list=state.people.filter(p=>p.status!=='friend').slice(0,3);$('#suggestions').innerHTML=list.map(p=>`<div class="suggestion"><img class="avatar" src="${esc(p.avatar)}" alt=""><div><b>${esc(p.name)}</b><small>${esc(p.city)}</small></div><button class="mini" data-suggest-friend="${esc(p.id)}">${p.status==='pending'?'…':'＋'}</button></div>`).join('')||'<div class="empty">Täze teklip ýok.</div>';$$('[data-suggest-friend]').forEach(b=>b.onclick=()=>toggleFriend(b.dataset.suggestFriend));}
+function renderSuggestions(){const list=state.people.filter(p=>p.status!=='friend').slice(0,3);$('#suggestions').innerHTML=list.map(p=>`<div class="suggestion"><img class="avatar" src="${esc(p.avatar)}" alt=""><div><b>${esc(p.name)}</b><small>${esc(p.city)}</small></div><button class="mini" data-suggest-friend="${esc(p.id)}" aria-label="${esc(p.name)} bilen dostlaş">${p.status==='pending'?'…':'＋'}</button></div>`).join('')||'<div class="empty">Täze teklip ýok.</div>';$$('[data-suggest-friend]').forEach(b=>b.onclick=()=>toggleFriend(b.dataset.suggestFriend));}
 function renderOnline(){const list=state.people.filter(p=>p.online);$('#onlineCount').textContent=`● ${list.length}`;$('#onlinePeople').innerHTML=list.map(p=>`<button data-online-chat="${esc(p.id)}" title="${esc(p.name)}"><img src="${esc(p.avatar)}" alt="${esc(p.name)}"></button>`).join('');$$('[data-online-chat]').forEach(b=>b.onclick=()=>startChatWithPerson(b.dataset.onlineChat));}
-

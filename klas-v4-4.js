@@ -18,11 +18,10 @@ function renderEverything(){
 }
 
 $$('[data-page]').forEach(b=>b.onclick=()=>showPage(b.dataset.page));
-$('#menuBtn').onclick=()=>$('#sidebar').classList.toggle('open');
+$('#menuBtn').onclick=()=>{const open=$('#sidebar').classList.toggle('open');$('#menuBtn').setAttribute('aria-expanded',String(open))};
 $('#themeBtn').onclick=()=>{state.dark=!state.dark;save();applyTheme()};
 $('#darkSwitch').onclick=()=>$('#themeBtn').click();
 $('#notifySwitch').onclick=()=>{state.notify=!state.notify;save();renderProfile();toast('Bildiriş sazlamasy saklandy')};
-$('#privacy').onchange=e=>{state.privacy=e.target.value;save();toast('Gizlinlik sazlamasy saklandy')};
 $('#composerOpen').onclick=()=>openComposer('text');
 $$('[data-compose]').forEach(b=>b.onclick=()=>openComposer(b.dataset.compose));
 $('#peopleFilter').oninput=renderPeople;
@@ -56,10 +55,21 @@ window.addEventListener('offline',()=>toast('Internet baglanyşygy kesildi. Ýer
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)schedulePageRender(activePageName())});
 document.addEventListener('click',e=>{
   if(!e.target.closest('.post-menu,.post-dropdown'))$$('.post-dropdown').forEach(x=>x.classList.add('hidden'));
-  if(!e.target.closest('.search-wrap'))$('#searchResults').classList.add('hidden');
+  if(!e.target.closest('.search-wrap')){$('#searchResults').classList.add('hidden');$('#searchInput').setAttribute('aria-expanded','false')}
+  if($('#sidebar').classList.contains('open')&&!e.target.closest('#sidebar,#menuBtn')){$('#sidebar').classList.remove('open');$('#menuBtn').setAttribute('aria-expanded','false')}
 });
 document.addEventListener('keydown',e=>{
-  if(e.key==='Escape'){closeModal();closeLightbox();$('#searchResults').classList.add('hidden')}
+  if(e.key==='Escape'){closeModal();closeLightbox();$('#searchResults').classList.add('hidden');$('#searchInput').setAttribute('aria-expanded','false');$('#sidebar').classList.remove('open');$('#menuBtn').setAttribute('aria-expanded','false')}
+  if(e.key==='Tab'){
+    const root=$('#appModal').classList.contains('open')?$('.modal-card'):$('#lightbox').classList.contains('open')?$('.lightbox-dialog'):null;
+    if(root){
+      const focusable=$$('a[href],button:not([disabled]),input:not([disabled]),textarea:not([disabled]),select:not([disabled]),[tabindex]:not([tabindex="-1"])',root).filter(node=>node.offsetParent!==null);
+      if(!focusable.length){e.preventDefault();root.focus();return}
+      const first=focusable[0],last=focusable.at(-1);
+      if(e.shiftKey&&document.activeElement===first){e.preventDefault();last.focus()}
+      else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first.focus()}
+    }
+  }
   if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='k'){e.preventDefault();$('#searchInput').focus()}
 });
 

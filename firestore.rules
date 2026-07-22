@@ -4,6 +4,43 @@ service cloud.firestore {
     function signedIn() { return request.auth != null; }
     function isSelf(uid) { return signedIn() && request.auth.uid == uid; }
     function accountPath(uid) { return /databases/$(database)/documents/users/$(uid); }
+    function profilePath(uid) { return /databases/$(database)/documents/profiles/$(uid); }
+    function validText(value, maxSize, required) {
+      return value is string
+        && value.size() <= maxSize
+        && (!required || value.size() > 0);
+    }
+    function validHttpsOrEmpty(value) {
+      return value is string
+        && value.size() <= 2000
+        && (value == '' || value.matches('^https://[^\\s<>]{1,2000}$'));
+    }
+    function validPublicRole(value) {
+      let role = get(accountPath(request.auth.uid)).data.get('role', 'user');
+      return validText(value, 80, true)
+        && ((role == 'admin' && value == 'Administrator')
+          || (role == 'moderator' && value == 'Moderator')
+          || (role == 'user' && !(value in ['Administrator', 'Moderator'])));
+    }
+    function validProfileData(data, uid) {
+      return data.uid == uid
+        && validText(data.get('fullName', ''), 100, true)
+        && validText(data.get('shortName', ''), 30, true)
+        && validText(data.get('city', ''), 80, false)
+        && validText(data.get('profession', ''), 80, false)
+        && validText(data.get('bio', ''), 500, false)
+        && validText(data.get('school', ''), 120, false)
+        && validHttpsOrEmpty(data.get('avatarURL', ''));
+    }
+    function validPostContent(data) {
+      return validText(data.get('text', ''), 5000, false)
+        && validHttpsOrEmpty(data.get('imageURL', ''))
+        && validHttpsOrEmpty(data.get('videoURL', ''))
+        && (data.get('text', '').size() > 0
+          || data.get('imageURL', '').size() > 0
+          || data.get('videoURL', '').size() > 0)
+        && data.get('visibility', 'public') in ['public', 'friends'];
+    }
     function isAdmin() {
       return signedIn()
         && exists(accountPath(request.auth.uid))
@@ -84,9 +121,12 @@ service cloud.firestore {
       allow read: if signedIn();
       allow create: if isSelf(uid)
         && request.resource.data.uid == request.auth.uid
-        && !request.resource.data.keys().hasAny(['role', 'status', 'admin', 'email']);
+        && !request.resource.data.keys().hasAny(['role', 'status', 'admin', 'email'])
+        && validProfileData(request.resource.data, uid);
       allow update: if isSelf(uid)
         && request.resource.data.uid == resource.data.uid
+        && !request.resource.data.keys().hasAny(['role', 'status', 'admin', 'email'])
+        && validProfileData(request.resource.data, uid)
         && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
           'fullName', 'shortName', 'email', 'avatarURL', 'city', 'bio', 'school',
           'graduationYear', 'profession', 'online', 'lastSeen', 'updatedAt'
@@ -99,14 +139,20 @@ service cloud.firestore {
       allow create: if signedIn()
         && request.resource.data.authorId == request.auth.uid
         && request.resource.data.get('likesCount', 0) == 0
-        && request.resource.data.get('commentsCount', 0) == 0;
+        && request.resource.data.get('commentsCount', 0) == 0
+        && exists(accountPath(request.auth.uid))
+        && exists(profilePath(request.auth.uid))
+        && validText(request.resource.data.get('authorName', ''), 100, true)
+        && validHttpsOrEmpty(request.resource.data.get('authorAvatar', ''))
+        && validPublicRole(request.resource.data.get('authorRole', ''))
+        && validPostContent(request.resource.data);
       allow update: if (signedIn()
         && resource.data.authorId == request.auth.uid
         && request.resource.data.authorId == resource.data.authorId
         && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
-          'authorName', 'authorAvatar', 'authorRole', 'text', 'imageURL',
-          'videoURL', 'visibility', 'updatedAt'
-        ]))
+          'text', 'imageURL', 'videoURL', 'visibility', 'updatedAt'
+        ])
+        && validPostContent(request.resource.data))
         || validLikeCounterChange(postId)
         || (isModeratorOrAdmin()
           && request.resource.data.authorId == resource.data.authorId
@@ -133,8 +179,15 @@ service cloud.firestore {
           && request.resource.data.authorId == request.auth.uid
           && request.resource.data.text is string
           && request.resource.data.text.size() > 0
-          && request.resource.data.text.size() <= 2000;
-        allow update, delete: if (signedIn() && resource.data.authorId == request.auth.uid) || isModeratorOrAdmin();
+          && request.resource.data.text.size() <= 2000
+          && validText(request.resource.data.get('authorName', ''), 100, true)
+          && validHttpsOrEmpty(request.resource.data.get('authorAvatar', ''));
+        allow update: if signedIn()
+          && resource.data.authorId == request.auth.uid
+          && request.resource.data.authorId == resource.data.authorId
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['text', 'updatedAt'])
+          && validText(request.resource.data.text, 2000, true);
+        allow delete: if (signedIn() && resource.data.authorId == request.auth.uid) || isModeratorOrAdmin();
       }
     }
 
@@ -166,7 +219,9 @@ service cloud.firestore {
         && request.resource.data.participants == resource.data.participants
         && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
           'lastMessage', 'lastMessageAt', 'lastMessageSenderId', 'updatedAt'
-        ]);
+        ])
+        && validText(request.resource.data.get('lastMessage', ''), 4000, true)
+        && request.resource.data.lastMessageSenderId == request.auth.uid;
       allow delete: if false;
 
       match /messages/{messageId} {
@@ -239,7 +294,15 @@ service cloud.firestore {
       allow read: if signedIn() && resource.data.userId == request.auth.uid;
       allow create: if signedIn()
         && request.resource.data.fromUserId == request.auth.uid
-        && request.resource.data.userId != request.auth.uid;
+        && request.resource.data.userId != request.auth.uid
+        && request.resource.data.type in [
+          'message', 'friend_request', 'friend_accepted', 'like', 'comment', 'video_call'
+        ]
+        && request.resource.data.page in ['feed', 'classmates', 'messages']
+        && request.resource.data.read == false
+        && validText(request.resource.data.text, 240, true)
+        && validText(request.resource.data.get('icon', ''), 12, false)
+        && validText(request.resource.data.get('targetId', ''), 200, false);
       allow update: if signedIn()
         && resource.data.userId == request.auth.uid
         && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['read']);
@@ -251,11 +314,17 @@ service cloud.firestore {
       allow create: if signedIn()
         && request.resource.data.ownerId == request.auth.uid
         && request.resource.data.memberIds == [request.auth.uid]
-        && request.resource.data.membersCount == 1;
+        && request.resource.data.membersCount == 1
+        && validText(request.resource.data.name, 80, true)
+        && validText(request.resource.data.get('icon', ''), 8, false)
+        && validText(request.resource.data.get('description', ''), 300, false);
       allow update: if (signedIn()
         && resource.data.ownerId == request.auth.uid
         && request.resource.data.ownerId == resource.data.ownerId
-        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['name', 'icon', 'description', 'updatedAt']))
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['name', 'icon', 'description', 'updatedAt'])
+        && validText(request.resource.data.name, 80, true)
+        && validText(request.resource.data.get('icon', ''), 8, false)
+        && validText(request.resource.data.get('description', ''), 300, false))
         || validGroupMembershipChange();
       allow delete: if (signedIn() && resource.data.ownerId == request.auth.uid) || isModeratorOrAdmin();
     }
@@ -264,34 +333,66 @@ service cloud.firestore {
       allow read: if signedIn();
       allow create: if signedIn()
         && request.resource.data.ownerId == request.auth.uid
-        && request.resource.data.attendeeIds == [request.auth.uid];
+        && request.resource.data.attendeeIds == [request.auth.uid]
+        && validText(request.resource.data.title, 120, true)
+        && validText(request.resource.data.date, 10, true)
+        && request.resource.data.date.matches('^\\d{4}-\\d{2}-\\d{2}$')
+        && validText(request.resource.data.time, 5, true)
+        && request.resource.data.time.matches('^\\d{2}:\\d{2}$')
+        && validText(request.resource.data.location, 180, true)
+        && validText(request.resource.data.get('description', ''), 500, false);
       allow update: if (signedIn()
         && resource.data.ownerId == request.auth.uid
         && request.resource.data.ownerId == resource.data.ownerId
         && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
           'title', 'date', 'time', 'location', 'description', 'updatedAt'
-        ]))
+        ])
+        && validText(request.resource.data.title, 120, true)
+        && validText(request.resource.data.date, 10, true)
+        && request.resource.data.date.matches('^\\d{4}-\\d{2}-\\d{2}$')
+        && validText(request.resource.data.time, 5, true)
+        && request.resource.data.time.matches('^\\d{2}:\\d{2}$')
+        && validText(request.resource.data.location, 180, true)
+        && validText(request.resource.data.get('description', ''), 500, false))
         || validEventAttendanceChange();
       allow delete: if (signedIn() && resource.data.ownerId == request.auth.uid) || isModeratorOrAdmin();
     }
 
     match /media/{mediaId} {
       allow read: if signedIn();
-      allow create: if signedIn() && request.resource.data.ownerId == request.auth.uid;
+      allow create: if signedIn()
+        && request.resource.data.ownerId == request.auth.uid
+        && request.resource.data.type in ['image', 'video']
+        && validText(request.resource.data.get('title', ''), 100, false)
+        && validHttpsOrEmpty(request.resource.data.src)
+        && request.resource.data.src != '';
       allow update: if signedIn()
         && resource.data.ownerId == request.auth.uid
         && request.resource.data.ownerId == resource.data.ownerId
-        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['title', 'src', 'type', 'updatedAt']);
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['title', 'src', 'type', 'updatedAt'])
+        && request.resource.data.type in ['image', 'video']
+        && validText(request.resource.data.get('title', ''), 100, false)
+        && validHttpsOrEmpty(request.resource.data.src)
+        && request.resource.data.src != '';
       allow delete: if (signedIn() && resource.data.ownerId == request.auth.uid) || isModeratorOrAdmin();
     }
 
     match /stories/{storyId} {
       allow read: if signedIn();
-      allow create: if signedIn() && request.resource.data.ownerId == request.auth.uid;
+      allow create: if signedIn()
+        && request.resource.data.ownerId == request.auth.uid
+        && validText(request.resource.data.get('text', ''), 500, false)
+        && validText(request.resource.data.get('ownerName', ''), 100, true)
+        && validHttpsOrEmpty(request.resource.data.get('ownerAvatar', ''))
+        && validHttpsOrEmpty(request.resource.data.media)
+        && request.resource.data.media != '';
       allow update: if signedIn()
         && resource.data.ownerId == request.auth.uid
         && request.resource.data.ownerId == resource.data.ownerId
-        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['text', 'media', 'updatedAt']);
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['text', 'media', 'updatedAt'])
+        && validText(request.resource.data.get('text', ''), 500, false)
+        && validHttpsOrEmpty(request.resource.data.media)
+        && request.resource.data.media != '';
       allow delete: if (signedIn() && resource.data.ownerId == request.auth.uid) || isModeratorOrAdmin();
     }
 
