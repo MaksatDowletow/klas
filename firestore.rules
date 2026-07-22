@@ -13,7 +13,7 @@ service cloud.firestore {
     function validHttpsOrEmpty(value) {
       return value is string
         && value.size() <= 2000
-        && (value == '' || value.matches('^https://[^\\s<>]{1,2000}$'));
+        && (value == '' || value.matches('^https://[^\\s<>]+$'));
     }
     function validPublicRole(value) {
       let role = get(accountPath(request.auth.uid)).data.get('role', 'user');
