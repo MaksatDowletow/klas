@@ -1,0 +1,88 @@
+name: Deploy Firestore Rules and Indexes
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - firestore.rules
+      - firestore.indexes.json
+      - firebase.json
+      - .firebaserc
+      - .github/workflows/deploy-firestore.yml
+
+permissions:
+  contents: read
+
+concurrency:
+  group: firestore-production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Deploy to project-789b5025-7a3c-4b74-88b
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Verify Firebase service-account secret
+        shell: bash
+        env:
+          FIREBASE_SERVICE_ACCOUNT_JSON: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}
+        run: |
+          set -euo pipefail
+          if [[ -z "${FIREBASE_SERVICE_ACCOUNT_JSON}" ]]; then
+            echo "::error::Repository secret FIREBASE_SERVICE_ACCOUNT_JSON is missing."
+            echo "Add the complete Google service-account JSON in Settings > Secrets and variables > Actions."
+            exit 1
+          fi
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}
+          create_credentials_file: true
+          export_environment_variables: true
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Validate Firebase configuration
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -s firebase.json
+          test -s .firebaserc
+          test -s firestore.rules
+          test -s firestore.indexes.json
+          jq empty firebase.json .firebaserc firestore.indexes.json
+          grep -q '"rules": "firestore.rules"' firebase.json
+          grep -q '"indexes": "firestore.indexes.json"' firebase.json
+          grep -q 'project-789b5025-7a3c-4b74-88b' .firebaserc
+
+      - name: Install Firebase CLI
+        run: npm install --global firebase-tools@latest
+
+      - name: Deploy Firestore rules and indexes
+        shell: bash
+        run: |
+          set -euo pipefail
+          firebase deploy \
+            --only firestore \
+            --project project-789b5025-7a3c-4b74-88b \
+            --non-interactive
+
+      - name: Deployment summary
+        if: success()
+        run: |
+          echo "### Firestore deployment completed" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Project: \`project-789b5025-7a3c-4b74-88b\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Rules: \`firestore.rules\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Indexes: \`firestore.indexes.json\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Commit: \`${GITHUB_SHA}\`" >> "$GITHUB_STEP_SUMMARY"
