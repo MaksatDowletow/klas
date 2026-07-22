@@ -18,7 +18,9 @@ function renderEverything(){
 }
 
 $$('[data-page]').forEach(b=>b.onclick=()=>showPage(b.dataset.page));
-$('#menuBtn').onclick=()=>{const open=$('#sidebar').classList.toggle('open');$('#menuBtn').setAttribute('aria-expanded',String(open))};
+$('#menuBtn').onclick=()=>{closeMobileSearch();const open=$('#sidebar').classList.toggle('open');$('#menuBtn').setAttribute('aria-expanded',String(open))};
+$('#mobileSearchBtn').onclick=()=>toggleMobileSearch();
+$('#mobileChatBack').onclick=()=>setMobileChatOpen(false);
 $('#themeBtn').onclick=()=>{state.dark=!state.dark;save();applyTheme()};
 $('#darkSwitch').onclick=()=>$('#themeBtn').click();
 $('#notifySwitch').onclick=()=>{state.notify=!state.notify;save();renderProfile();toast('Bildiriş sazlamasy saklandy')};
@@ -54,12 +56,13 @@ window.addEventListener('online',()=>{schedulePageRender(activePageName());toast
 window.addEventListener('offline',()=>toast('Internet baglanyşygy kesildi. Ýerli režim dowam edýär.'));
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)schedulePageRender(activePageName())});
 document.addEventListener('click',e=>{
+  if(e.target.closest('[data-chat],[data-message-person],[data-online-chat],[data-search-person],[data-chat-choice]')) setTimeout(()=>setMobileChatOpen(true),0);
   if(!e.target.closest('.post-menu,.post-dropdown'))$$('.post-dropdown').forEach(x=>x.classList.add('hidden'));
-  if(!e.target.closest('.search-wrap')){$('#searchResults').classList.add('hidden');$('#searchInput').setAttribute('aria-expanded','false')}
+  if(!e.target.closest('.search-wrap,#mobileSearchBtn')){closeMobileSearch();$('#searchResults').classList.add('hidden');$('#searchInput').setAttribute('aria-expanded','false')}
   if($('#sidebar').classList.contains('open')&&!e.target.closest('#sidebar,#menuBtn')){$('#sidebar').classList.remove('open');$('#menuBtn').setAttribute('aria-expanded','false')}
 });
 document.addEventListener('keydown',e=>{
-  if(e.key==='Escape'){closeModal();closeLightbox();$('#searchResults').classList.add('hidden');$('#searchInput').setAttribute('aria-expanded','false');$('#sidebar').classList.remove('open');$('#menuBtn').setAttribute('aria-expanded','false')}
+  if(e.key==='Escape'){closeModal();closeLightbox();closeMobileSearch();setMobileChatOpen(false);$('#searchResults').classList.add('hidden');$('#searchInput').setAttribute('aria-expanded','false');$('#sidebar').classList.remove('open');$('#menuBtn').setAttribute('aria-expanded','false')}
   if(e.key==='Tab'){
     const root=$('#appModal').classList.contains('open')?$('.modal-card'):$('#lightbox').classList.contains('open')?$('.lightbox-dialog'):null;
     if(root){
@@ -70,8 +73,10 @@ document.addEventListener('keydown',e=>{
       else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first.focus()}
     }
   }
-  if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='k'){e.preventDefault();$('#searchInput').focus()}
+  if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='k'){e.preventDefault();if(matchMedia('(max-width:860px)').matches)toggleMobileSearch(true);else $('#searchInput').focus()}
 });
+
+window.addEventListener('resize',()=>{if(!matchMedia('(max-width:860px)').matches)closeMobileSearch()});
 
 renderEverything();
 routeFromHash();

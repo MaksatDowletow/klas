@@ -71,11 +71,15 @@ jobs:
           node --check service-worker.js
           jq empty manifest.webmanifest health.json
           grep -q 'rel="manifest" href="./manifest.webmanifest"' index.html
+          grep -q 'viewport-fit=cover' index.html
+          grep -q 'id="mobileSearchBtn"' index.html
+          grep -q 'id="mobileChatBack"' index.html
+          grep -q '@media(max-width:760px)' klas-v4.css
           grep -q '"start_url": "/klas/' manifest.webmanifest
           grep -q '"scope": "/klas/"' manifest.webmanifest
           grep -q 'https://maksatdowletow.github.io/klas/' index.html
           ! grep -q 'github.io/Klas/' index.html
-          grep -q "version: '5.5.0'" klas-config.js
+          grep -q "version: '5.6.0'" klas-config.js
 
       - name: Build clean Pages artifact
         shell: bash
@@ -124,7 +128,7 @@ jobs:
           cat > _site/release.json <<EOF
           {
             "app": "Klas",
-            "version": "5.5.0",
+            "version": "5.6.0",
             "commit": "${GITHUB_SHA}",
             "dynamicPages": true,
             "realtimeComments": true,

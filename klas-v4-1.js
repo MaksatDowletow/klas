@@ -176,6 +176,37 @@ function schedulePageRender(name = activePageName()){
   });
 }
 
+function setMobileChatOpen(open){
+  const shell = $('#page-messages .chat-shell');
+  if(!shell) return;
+  shell.classList.toggle('mobile-chat-open', Boolean(open));
+  if(!open) requestAnimationFrame(() => $(`[data-chat="${CSS.escape(state.activeChat || '')}"]`)?.focus());
+}
+
+function closeMobileSearch(){
+  const topbar = $('.topbar');
+  const button = $('#mobileSearchBtn');
+  if(!topbar || !button) return;
+  topbar.classList.remove('search-open');
+  button.setAttribute('aria-expanded', 'false');
+  button.setAttribute('aria-label', 'Gözlegi aç');
+}
+
+function toggleMobileSearch(force){
+  const topbar = $('.topbar');
+  const button = $('#mobileSearchBtn');
+  if(!topbar || !button) return;
+  const open = typeof force === 'boolean' ? force : !topbar.classList.contains('search-open');
+  topbar.classList.toggle('search-open', open);
+  button.setAttribute('aria-expanded', String(open));
+  button.setAttribute('aria-label', open ? 'Gözlegi ýap' : 'Gözlegi aç');
+  if(open){
+    $('#sidebar').classList.remove('open');
+    $('#menuBtn').setAttribute('aria-expanded', 'false');
+    requestAnimationFrame(() => $('#searchInput').focus());
+  }
+}
+
 function showPage(requestedName, updateHash=true){
   const name = PAGE_NAMES.has(requestedName) && $(`#page-${requestedName}`) ? requestedName : 'feed';
   $$('.page').forEach(el=>el.classList.remove('active'));
@@ -183,6 +214,8 @@ function showPage(requestedName, updateHash=true){
   $$('[data-page]').forEach(el=>el.classList.toggle('active',el.dataset.page===name));
   $('#sidebar').classList.remove('open');
   $('#menuBtn').setAttribute('aria-expanded','false');
+  setMobileChatOpen(false);
+  closeMobileSearch();
   $('#searchResults').classList.add('hidden');
   $('#searchInput').setAttribute('aria-expanded','false');
   if(updateHash && location.hash !== `#${name}`){
