@@ -21,7 +21,7 @@ Esasy runtime faýllary:
 
 ## Authentication
 
-Klas diňe Google provider-i we popup giriş akymyny ulanýar. Popup üstünlikli geçenden soň UI `users/{uid}` + `profiles/{uid}` bootstrap-y doly gutarýança garaşýar; şonuň üçin ýarym tamamlanan giriş ýagdaýy görkezilmeýär. Täze hasabyň profil tassyklamasy we jemgyýet düzgünleriniň kabul edilmegi bir atomik tranzaksiýada ýazylýar. Email/password, telefon we cross-origin redirect giriş akymlary ýok. Firestore maglumatlary diňe Google token-li, `active` ýagdaýly Klas agzalaryna açyk; öňki schema-daky doly bolmadyk akkaunt/profil ýazgylary girişde howpsuz täzelenýär, `blocked` hasap hiç wagt özüni açyp bilmeýär.
+Klas diňe Google provider-i we popup giriş akymyny ulanýar. Popup üstünlikli geçenden soň UI ilki `users/{uid}` hasabyny döredýär, diňe şondan soň şol ulanyjynyň öz `profiles/{uid}` ýazgysyny barlap/taýýarlaýar we bootstrap doly gutarýança garaşýar. Täze hasabyň profil tassyklamasy we jemgyýet düzgünleriniň kabul edilmegi bir atomik tranzaksiýada ýazylýar. Email/password, telefon we cross-origin redirect giriş akymlary ýok. Firestore maglumatlary diňe Google token-li, `active` ýagdaýly Klas agzalaryna açyk; onboarding-den öň diňe öz profil bootstrap okalyşy rugsatly, `blocked` hasap bolsa öz profilini hem okap ýa-da özüni açyp bilmeýär.
 
 Deployment we Firebase Console sazlamalary üçin `BACKEND_SETUP.md`, gizlinlik beýany üçin `privacy.html` faýlyna serediň.
 

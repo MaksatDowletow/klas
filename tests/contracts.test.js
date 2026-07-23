@@ -51,6 +51,19 @@ test('authentication remains Google popup only', () => {
   assert.match(rules, /sign_in_provider == 'google\.com'/);
 });
 
+test('first-login bootstrap provisions the account before reading its profile', () => {
+  const core = read('klas-backend-core.js');
+  const rules = read('firestore.rules');
+  const accountRead = core.indexOf('const userSnapshot = await getDoc(userRef)');
+  const accountCreate = core.indexOf('await setDoc(userRef, {', accountRead);
+  const profileRead = core.indexOf('const profileSnapshot = await getDoc(profileRef)', accountCreate);
+  assert.ok(accountRead >= 0 && accountRead < accountCreate);
+  assert.ok(accountCreate < profileRead);
+  assert.doesNotMatch(core, /Promise\.all\(\[getDoc\(userRef\), getDoc\(profileRef\)\]\)/);
+  assert.match(rules, /function canReadOwnProfile\(uid\)/);
+  assert.match(rules, /allow read: if isActiveMember\(\) \|\| canReadOwnProfile\(uid\)/);
+});
+
 test('service worker precaches the architecture runtime', () => {
   const worker = read('service-worker.js');
   assert.match(worker, /\.\/klas-runtime\.js/);

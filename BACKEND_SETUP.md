@@ -18,7 +18,7 @@ Frontend resmi Firebase CDN-den Firebase JS SDK 12.16.0 ulanýar.
 2. Email/password, telefon, anonymous we beýleki provider-leri öçürilen ýagdaýda saklaň: Klas diňe Google girişini goldaýar.
 3. `maksatdowletow.github.io` domenini Authentication authorized domains sanawyna goşuň. `/klas/` ýoluny domen hökmünde goşmaň.
 4. Klas Google girişini `signInWithPopup()` arkaly tamamlaýar; GitHub Pages bilen cross-origin redirect ulanylmaýar.
-5. Popup netijesinden soň UI täze `users/{uid}` we `profiles/{uid}` ýazgylarynyň doly taýýarlanmagyna garaşýar. Profil hem düzgünleriň kabul edilmegi Firestore tranzaksiýasynda bile ýazylýar.
+5. Popup netijesinden soň UI ilki `users/{uid}` ýazgysyny provision edýär, soň diňe şol agzanyň öz `profiles/{uid}` ýazgysyny barlap taýýarlaýar. Onboarding-den öň beýleki profiller açylmaýar; `blocked` agza öz profil bootstrap-yna hem girip bilmeýär. Profil hem düzgünleriň kabul edilmegi Firestore tranzaksiýasynda bile ýazylýar.
 6. Cloud Firestore dörediň.
 7. Repository-däki `firestore.rules` we `firestore.indexes.json` faýllaryny deploy ediň.
 

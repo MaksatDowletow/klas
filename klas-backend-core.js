@@ -203,7 +203,7 @@ export async function logout(){
 async function ensureProfile(user){
   const userRef = doc(db, 'users', user.uid);
   const profileRef = doc(db, 'profiles', user.uid);
-  const [userSnapshot, profileSnapshot] = await Promise.all([getDoc(userRef), getDoc(profileRef)]);
+  const userSnapshot = await getDoc(userRef);
 
   const isNewAccount = !userSnapshot.exists();
   const previousAccount = userSnapshot.data() || {};
@@ -218,7 +218,18 @@ async function ensureProfile(user){
       lastLogin: serverTimestamp(),
       updatedAt: serverTimestamp()
     });
-  } else {
+  } else if (previousAccount.status === 'blocked') {
+    throw authPolicy.createError('klas/account-blocked');
+  } else if (previousAccount.status
+      && !['active', 'pending'].includes(previousAccount.status)) {
+    throw authPolicy.createError('klas/account-inactive');
+  }
+
+  // A new Google member must be provisioned before Firestore can safely allow
+  // the member to inspect or repair only their own profile document.
+  const profileSnapshot = await getDoc(profileRef);
+
+  if (!isNewAccount) {
     const normalized = authPolicy.normalizeAccount(previousAccount, {
       profileExists: profileSnapshot.exists()
     });
