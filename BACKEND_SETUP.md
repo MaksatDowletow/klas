@@ -63,6 +63,8 @@ Işleýän funksiýalar:
 - `Görüldi` belgisi;
 - diňe çata gatnaşýan iki ulanyja okamak/ýazmak rugsady.
 
+Ilkinji çat `direct_{kiçiUid}_{ulyUid}` deterministik ID bilen döredilýär. Synpdaş sanawy, onlaýn avatarlar, global gözleg we **Täze çat** modaly şol bir Firebase akymyny ulanýar; ýerli-demo dialogy Google bilen giriş edilen production režiminde ulanylmaýar. Dialog diňe `active` ýagdaýly we onboarding-i tamamlanan iki hasabyň arasynda döredilip bilner.
+
 ## Wideoçat
 
 Wideoçat WebRTC ulanýar, Firestore diňe signaling maglumatlaryny saklaýar:

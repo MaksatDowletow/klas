@@ -1,2 +1,2 @@
-Klas v6.0.1
-Correct first-login provisioning order with blocked-safe own-profile bootstrap access
+Klas v6.0.2
+Restore secure Firestore direct-chat creation and unify every production chat entry point

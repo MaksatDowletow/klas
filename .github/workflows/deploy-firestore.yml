@@ -68,10 +68,13 @@ jobs:
           grep -q 'project-789b5025-7a3c-4b74-88b' .firebaserc
           grep -q "sign_in_provider == 'google.com'" firestore.rules
           grep -q 'function isActiveMember()' firestore.rules
+          grep -q 'function isActiveAccount(uid)' firestore.rules
           grep -q 'function isProvisionedMember()' firestore.rules
           grep -q 'function canReadOwnProfile(uid)' firestore.rules
           grep -q "get('status', 'blocked') == 'active'" firestore.rules
           grep -q "get('status', 'pending') == 'pending'" firestore.rules
+          grep -q 'allow get: if isActiveMember()' firestore.rules
+          grep -q "conversationId == 'direct_'" firestore.rules
           grep -q "'uid', 'fullName', 'shortName', 'email', 'role', 'status', 'admin'" firestore.rules
 
       - name: Install pinned Firebase test tools

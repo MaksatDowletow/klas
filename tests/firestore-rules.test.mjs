@@ -11,8 +11,11 @@ import {
   doc,
   getDoc,
   getDocs,
+  orderBy,
+  query,
   serverTimestamp,
   setDoc,
+  where,
   writeBatch
 } from 'firebase/firestore';
 
@@ -85,6 +88,27 @@ async function seedAccount(uid, overrides = {}) {
       lastLogin: new Date(),
       updatedAt: new Date(),
       ...overrides
+    });
+  });
+}
+
+async function seedMember(uid, overrides = {}) {
+  await seedAccount(uid, { onboardingComplete: true, ...overrides });
+  await environment.withSecurityRulesDisabled(async context => {
+    await setDoc(doc(context.firestore(), 'profiles', uid), {
+      uid,
+      fullName: uid,
+      shortName: uid.slice(0, 30),
+      avatarURL: '',
+      city: '',
+      profession: '',
+      bio: '',
+      school: '',
+      graduationYear: 2000,
+      online: false,
+      lastSeen: new Date(),
+      createdAt: new Date(),
+      updatedAt: new Date()
     });
   });
 }
@@ -233,4 +257,84 @@ test('profile schema rejects invalid years and unexpected fields', async () => {
   })));
   await assertSucceeds(setDoc(doc(db, 'profiles', uid), newProfile(uid)));
   assert.ok(true);
+});
+
+test('direct chat can be discovered, created, messaged, and seen only by its members', async () => {
+  const alice = 'alice-user';
+  const bob = 'bob-user';
+  const eve = 'eve-user';
+  const blocked = 'blocked-chat-user';
+  await seedMember(alice);
+  await seedMember(bob);
+  await seedMember(eve);
+  await seedMember(blocked, { status: 'blocked' });
+
+  const participants = [alice, bob].sort();
+  const conversationId = `direct_${participants.join('_')}`;
+  const aliceDb = googleContext(alice).firestore();
+  const bobDb = googleContext(bob).firestore();
+  const eveDb = googleContext(eve).firestore();
+  const conversationRef = doc(aliceDb, 'conversations', conversationId);
+
+  const missingConversation = await assertSucceeds(getDoc(conversationRef));
+  assert.equal(missingConversation.exists(), false);
+  await assertSucceeds(setDoc(conversationRef, {
+    type: 'direct',
+    participants,
+    createdAt: serverTimestamp(),
+    updatedAt: serverTimestamp(),
+    lastMessage: '',
+    lastMessageAt: null,
+    lastMessageSenderId: ''
+  }));
+
+  await assertSucceeds(getDoc(doc(bobDb, 'conversations', conversationId)));
+  await assertFails(getDoc(doc(eveDb, 'conversations', conversationId)));
+  const aliceInbox = await assertSucceeds(getDocs(query(
+    collection(aliceDb, 'conversations'),
+    where('participants', 'array-contains', alice)
+  )));
+  assert.equal(aliceInbox.size, 1);
+
+  const messageRef = doc(collection(aliceDb, 'conversations', conversationId, 'messages'));
+  const sendBatch = writeBatch(aliceDb);
+  sendBatch.set(messageRef, {
+    senderId: alice,
+    text: 'Salam!',
+    createdAt: serverTimestamp(),
+    seenBy: [alice]
+  });
+  sendBatch.update(conversationRef, {
+    lastMessage: 'Salam!',
+    lastMessageAt: serverTimestamp(),
+    lastMessageSenderId: alice,
+    updatedAt: serverTimestamp()
+  });
+  await assertSucceeds(sendBatch.commit());
+
+  const bobMessages = await assertSucceeds(getDocs(query(
+    collection(bobDb, 'conversations', conversationId, 'messages'),
+    orderBy('createdAt', 'asc')
+  )));
+  assert.equal(bobMessages.size, 1);
+  await assertSucceeds(setDoc(
+    doc(bobDb, 'conversations', conversationId, 'messages', messageRef.id),
+    { seenBy: [alice, bob] },
+    { merge: true }
+  ));
+  await assertFails(getDocs(collection(eveDb, 'conversations', conversationId, 'messages')));
+
+  const blockedParticipants = [alice, blocked].sort();
+  await assertFails(setDoc(
+    doc(aliceDb, 'conversations', `direct_${blockedParticipants.join('_')}`),
+    {
+      type: 'direct',
+      participants: blockedParticipants,
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
+      lastMessage: '',
+      lastMessageAt: null,
+      lastMessageSenderId: ''
+    }
+  ));
 });
