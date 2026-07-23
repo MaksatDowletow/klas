@@ -1,2 +1,2 @@
-Klas v5.9.1
-Centralized automatic Cloudinary configuration with no per-user setup
+Klas v6.0.0
+Race-safe Google registration, atomic onboarding, and tested Firestore authorization

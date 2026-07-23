@@ -7,7 +7,7 @@
 })(typeof globalThis !== 'undefined' ? globalThis : this, root => {
   'use strict';
 
-  const APP_VERSION = '5.9.1';
+  const APP_VERSION = '6.0.0';
   const SCHEMA_VERSION = 1;
   const STORAGE_KEY = 'klas-v4-state';
   const STORAGE_MARKER = 'klas-store';

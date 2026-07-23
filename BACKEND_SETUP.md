@@ -18,8 +18,9 @@ Frontend resmi Firebase CDN-den Firebase JS SDK 12.16.0 ulanýar.
 2. Email/password, telefon, anonymous we beýleki provider-leri öçürilen ýagdaýda saklaň: Klas diňe Google girişini goldaýar.
 3. `maksatdowletow.github.io` domenini Authentication authorized domains sanawyna goşuň. `/klas/` ýoluny domen hökmünde goşmaň.
 4. Klas Google girişini `signInWithPopup()` arkaly tamamlaýar; GitHub Pages bilen cross-origin redirect ulanylmaýar.
-5. Cloud Firestore dörediň.
-6. Repository-däki `firestore.rules` we `firestore.indexes.json` faýllaryny deploy ediň.
+5. Popup netijesinden soň UI täze `users/{uid}` we `profiles/{uid}` ýazgylarynyň doly taýýarlanmagyna garaşýar. Profil hem düzgünleriň kabul edilmegi Firestore tranzaksiýasynda bile ýazylýar.
+6. Cloud Firestore dörediň.
+7. Repository-däki `firestore.rules` we `firestore.indexes.json` faýllaryny deploy ediň.
 
 ```bash
 firebase login
@@ -39,6 +40,7 @@ Ulanyjy çykanda ýa-da Firebase elýetersiz bolanda programma ýerli `localStor
 - client rol/status ýokarlandyryp bilmeýär. Bloklanan agza Firestore jemgyýet maglumatlaryny okap ýa-da ýazyp bilmeýär.
 - Firestore Rules `request.auth.token.firebase.sign_in_provider == 'google.com'` şertini server tarapynda hem barlaýar.
 - Öňki Klas wersiýasyndan galan `pending` ýa-da doly bolmadyk akkaunt/profil ýazgylary ilkinji Google girişinde howpsuz görnüşde täze schema geçirilýär; `blocked` ýagdaý hiç wagt awtomatik açylmaýar.
+- `npm run test:rules` Google-only giriş, iň pes rol, atomik onboarding, `blocked` hasap we profil schema düzgünlerini Firestore emulatorda barlaýar (Java 21 gerek).
 
 Production üçin Firebase App Check-i aýratyn açmak we Google Cloud API key-ni `maksatdowletow.github.io` HTTP referrer-i hem-de gerekli Firebase API-lary bilen çäklendirmek maslahat berilýär. API key public web config-dir; service-account açary ýa-da başga secret repository-ä goýulmaly däl.
 

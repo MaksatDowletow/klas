@@ -59,7 +59,14 @@ service cloud.firestore {
         && validText(data.get('profession', ''), 80, false)
         && validText(data.get('bio', ''), 500, false)
         && validText(data.get('school', ''), 120, false)
-        && validHttpsOrEmpty(data.get('avatarURL', ''));
+        && validHttpsOrEmpty(data.get('avatarURL', ''))
+        && data.get('graduationYear', 2000) is int
+        && data.get('graduationYear', 2000) >= 1900
+        && data.get('graduationYear', 2000) <= 2100
+        && data.get('online', false) is bool
+        && (!data.keys().hasAny(['lastSeen']) || data.lastSeen is timestamp)
+        && (!data.keys().hasAny(['createdAt']) || data.createdAt is timestamp)
+        && (!data.keys().hasAny(['updatedAt']) || data.updatedAt is timestamp);
     }
     function validPostContent(data) {
       return validText(data.get('text', ''), 5000, false)
@@ -134,34 +141,53 @@ service cloud.firestore {
       allow create: if isSelf(uid)
         && request.resource.data.keys().hasOnly([
           'uid', 'email', 'displayName', 'photoURL', 'authProvider', 'role', 'status',
-          'onboardingComplete', 'createdAt', 'lastLogin'
+          'onboardingComplete', 'createdAt', 'lastLogin', 'updatedAt'
         ])
         && request.resource.data.uid == request.auth.uid
         && request.resource.data.email == request.auth.token.email
         && request.resource.data.authProvider == 'google.com'
+        && validText(request.resource.data.get('displayName', ''), 100, false)
+        && validHttpsOrEmpty(request.resource.data.get('photoURL', ''))
         && request.resource.data.get('role', 'user') == 'user'
         && request.resource.data.get('status', 'active') == 'active'
         && request.resource.data.onboardingComplete == false
         && request.resource.data.createdAt == request.time
-        && request.resource.data.lastLogin == request.time;
+        && request.resource.data.lastLogin == request.time
+        && request.resource.data.updatedAt == request.time;
       allow update: if (isSelf(uid)
         && request.resource.data.uid == request.auth.uid
         && request.resource.data.email == request.auth.token.email
         && request.resource.data.get('authProvider', '') == 'google.com'
+        && validText(request.resource.data.get('displayName', ''), 100, false)
+        && validHttpsOrEmpty(request.resource.data.get('photoURL', ''))
         && (request.resource.data.get('role', 'user') == resource.data.get('role', 'user')
-          || (!resource.data.keys().hasAny(['role'])
-            && request.resource.data.get('role', 'user') == 'user'))
+          || (!(resource.data.get('role', '') in ['user', 'moderator', 'admin'])
+            && request.resource.data.get('role', '') == 'user'))
         && (request.resource.data.get('status', 'active') == resource.data.get('status', 'active')
           || (resource.data.get('status', 'pending') == 'pending'
             && request.resource.data.get('status', '') == 'active'))
         && request.resource.data.get('onboardingComplete', false) is bool
         && (!resource.data.get('onboardingComplete', false)
           || request.resource.data.get('onboardingComplete', false) == true)
+        && (resource.data.get('onboardingComplete', false) == true
+          || request.resource.data.get('onboardingComplete', false) == false
+          || (existsAfter(profilePath(uid))
+            && request.resource.data.acceptedCommunityRulesAt == request.time))
+        && (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['lastLogin'])
+          || request.resource.data.lastLogin == request.time)
+        && (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['acceptedCommunityRulesAt'])
+          || (request.resource.data.get('onboardingComplete', false) == true
+            && request.resource.data.acceptedCommunityRulesAt == request.time))
+        && request.resource.data.updatedAt == request.time
         && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
           'uid', 'email', 'displayName', 'photoURL', 'authProvider', 'role', 'status', 'lastLogin',
           'onboardingComplete', 'acceptedCommunityRulesAt', 'updatedAt'
         ]))
-        || (isAdmin() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['role', 'status', 'updatedAt']));
+        || (isAdmin()
+          && request.resource.data.get('role', 'user') in ['user', 'moderator', 'admin']
+          && request.resource.data.get('status', 'active') in ['active', 'blocked']
+          && request.resource.data.updatedAt == request.time
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['role', 'status', 'updatedAt']));
       allow delete: if false;
     }
 
@@ -169,12 +195,25 @@ service cloud.firestore {
       allow read: if isActiveMember();
       allow create: if isProvisionedMember() && isSelf(uid)
         && request.resource.data.uid == request.auth.uid
+        && request.resource.data.keys().hasOnly([
+          'uid', 'fullName', 'shortName', 'avatarURL', 'city', 'bio', 'school',
+          'graduationYear', 'profession', 'online', 'lastSeen', 'createdAt', 'updatedAt'
+        ])
+        && request.resource.data.keys().hasAll([
+          'uid', 'fullName', 'shortName', 'online', 'lastSeen', 'createdAt', 'updatedAt'
+        ])
         && !request.resource.data.keys().hasAny(['role', 'status', 'admin', 'email'])
-        && validProfileData(request.resource.data, uid);
+        && validProfileData(request.resource.data, uid)
+        && request.resource.data.lastSeen == request.time
+        && request.resource.data.createdAt == request.time
+        && request.resource.data.updatedAt == request.time;
       allow update: if isProvisionedMember() && isSelf(uid)
         && request.resource.data.uid == request.auth.uid
         && !request.resource.data.keys().hasAny(['role', 'status', 'admin', 'email'])
         && validProfileData(request.resource.data, uid)
+        && request.resource.data.updatedAt == request.time
+        && (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['lastSeen', 'online'])
+          || request.resource.data.lastSeen == request.time)
         && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
           'uid', 'fullName', 'shortName', 'email', 'role', 'status', 'admin',
           'avatarURL', 'city', 'bio', 'school',

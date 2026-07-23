@@ -27,8 +27,10 @@ import {
 
 export const config = window.KLAS_CONFIG;
 export const bridge = window.KlasBridge;
+export const authPolicy = window.KlasAuthPolicy;
 if (!config?.firebase?.projectId) throw new Error('Firebase konfigurasiýasy tapylmady.');
 if (!bridge) throw new Error('Klas bridge moduly tapylmady.');
+if (!authPolicy) throw new Error('Klas auth policy moduly tapylmady.');
 
 export const app = initializeApp(config.firebase);
 export const auth = getAuth(app);
@@ -44,7 +46,8 @@ export const runtime = {
   account: null,
   profiles: new Map(),
   posts: new Map(),
-  subscriptions: []
+  subscriptions: [],
+  authPersistence: 'checking'
 };
 
 export const $ = selector => document.querySelector(selector);
@@ -55,6 +58,9 @@ export const toast = text => bridge.toast(text);
 
 let presenceSequence = Promise.resolve();
 let authOperation = null;
+let authRevision = 0;
+let lastAuthFailure = null;
+const authBootstrap = authPolicy.createBootstrapRegistry();
 
 export function millis(value){
   return value?.toMillis?.() || value?.seconds * 1000 || Date.parse(value || '') || 0;
@@ -99,22 +105,7 @@ export function handleError(error, prefix = 'Firebase ýalňyşlygy'){
 }
 
 export function authErrorMessage(error){
-  const code = String(error?.code || '');
-  const messages = {
-    'auth/popup-closed-by-user': 'Google giriş penjiresi tamamlanmazdan ýapyldy.',
-    'auth/cancelled-popup-request': 'Öňki Google giriş synanyşygy bes edildi. Täzeden synanyşyň.',
-    'auth/popup-blocked': 'Brauzer Google giriş penjiresini bloklady. Popup rugsadyny açyp täzeden synanyşyň.',
-    'auth/operation-not-supported-in-this-environment': 'Bu brauzer Google giriş penjiresini açyp bilmedi. Adaty Chrome, Edge ýa-da Safari penjiresinden synanyşyň.',
-    'auth/network-request-failed': 'Internet baglanyşygy sebäpli Google giriş başartmady.',
-    'auth/unauthorized-domain': 'Bu domen Firebase Google giriş üçin rugsatlandyrylmady.',
-    'auth/operation-not-allowed': 'Firebase Console-da Google giriş usuly açylmadyk.',
-    'auth/account-exists-with-different-credential': 'Bu e-poçta başga giriş usuly bilen baglanyşykly.',
-    'auth/user-disabled': 'Bu Google akkaunty Klas üçin öçürilen.',
-    'auth/too-many-requests': 'Gaty köp giriş synanyşygy edildi. Biraz wagtdan gaýtadan synanyşyň.',
-    'auth/web-storage-unsupported': 'Brauzer sessiýany saklamagy bloklaýar. Cookie we site data sazlamasyny barlaň.',
-    'auth/internal-error': 'Google giriş hyzmatynda wagtlaýyn näsazlyk ýüze çykdy.'
-  };
-  return messages[code] || error?.message || 'Google giriş başartmady.';
+  return authPolicy.messageFor(error);
 }
 
 function updateAuthButton({ busy = false, signedIn = Boolean(runtime.user) } = {}){
@@ -171,12 +162,13 @@ export async function login(){
   if (!navigator.onLine) throw new Error('Google giriş üçin internet baglanyşygy gerek.');
   authOperation = (async () => {
     updateAuthButton({ busy: true, signedIn: false });
-    await signInWithPopup(auth, provider);
+    const credential = await signInWithPopup(auth, provider);
+    return authBootstrap.wait(credential.user.uid);
   })();
   try { return await authOperation; }
   finally {
     authOperation = null;
-    updateAuthButton({ signedIn: Boolean(runtime.user) });
+    updateAuthButton({ signedIn: Boolean(runtime.user?.uid && runtime.user.uid === auth.currentUser?.uid) });
   }
 }
 
@@ -215,54 +207,41 @@ async function ensureProfile(user){
 
   const isNewAccount = !userSnapshot.exists();
   const previousAccount = userSnapshot.data() || {};
+  const identity = authPolicy.identityFromUser(user);
   if (isNewAccount) {
     await setDoc(userRef, {
-      uid: user.uid,
-      email: user.email || '',
-      displayName: user.displayName || '',
-      photoURL: user.photoURL || '',
-      authProvider: 'google.com',
+      ...identity,
       role: 'user',
       status: 'active',
       onboardingComplete: false,
       createdAt: serverTimestamp(),
-      lastLogin: serverTimestamp()
+      lastLogin: serverTimestamp(),
+      updatedAt: serverTimestamp()
     });
   } else {
-    const previousStatus = previousAccount.status;
-    const normalizedStatus = !previousStatus || previousStatus === 'pending'
-      ? 'active'
-      : previousStatus;
-    const normalizedRole = ['user', 'moderator', 'admin'].includes(previousAccount.role)
-      ? previousAccount.role
-      : 'user';
-    const normalizedOnboarding = typeof previousAccount.onboardingComplete === 'boolean'
-      ? previousAccount.onboardingComplete
-      : profileSnapshot.exists();
+    const normalized = authPolicy.normalizeAccount(previousAccount, {
+      profileExists: profileSnapshot.exists()
+    });
+    const legacyConsent = typeof previousAccount.onboardingComplete !== 'boolean'
+      && normalized.onboardingComplete
+      ? { acceptedCommunityRulesAt: serverTimestamp() }
+      : {};
     await setDoc(userRef, {
-      uid: user.uid,
-      email: user.email || '',
-      displayName: user.displayName || '',
-      photoURL: user.photoURL || '',
-      authProvider: 'google.com',
-      role: normalizedRole,
-      status: normalizedStatus,
-      onboardingComplete: normalizedOnboarding,
-      lastLogin: serverTimestamp()
+      ...identity,
+      ...normalized,
+      ...legacyConsent,
+      lastLogin: serverTimestamp(),
+      updatedAt: serverTimestamp()
     }, { merge: true });
   }
 
-  const account = (await getDoc(userRef)).data();
-  if (account.status === 'blocked') throw new Error('Bu Klas hasaby administrator tarapyndan bloklandy.');
-  if (account.status && account.status !== 'active') {
-    throw new Error('Bu Klas hasaby heniz işjeňleşdirilmedi. Administrator bilen habarlaşyň.');
-  }
+  const account = authPolicy.assertActiveAccount((await getDoc(userRef)).data());
 
   const base = {
     uid: user.uid,
-    fullName: user.displayName || user.email?.split('@')[0] || 'Klas ulanyjysy',
-    shortName: (user.displayName || 'Ulanyjy').split(' ')[0],
-    avatarURL: user.photoURL || '',
+    fullName: identity.displayName || identity.email.split('@')[0] || 'Klas ulanyjysy',
+    shortName: (identity.displayName || 'Ulanyjy').split(/\s+/)[0].slice(0, 30),
+    avatarURL: identity.photoURL,
     city: '',
     bio: '',
     profession: '',
@@ -270,6 +249,7 @@ async function ensureProfile(user){
     graduationYear: 2000,
     online: true
   };
+  base.fullName = base.fullName.slice(0, 100);
 
   if (!profileSnapshot.exists()) {
     await setDoc(profileRef, {
@@ -280,27 +260,31 @@ async function ensureProfile(user){
     });
   } else {
     const previousProfile = profileSnapshot.data() || {};
-    const validText = (value, fallback, max, required = false) => {
+    const repairText = (value, fallback, max, required = false) => {
       const text = typeof value === 'string' ? value.trim() : '';
       if (text.length > max || (required && !text)) return fallback;
       return text;
     };
-    const avatarURL = typeof previousProfile.avatarURL === 'string'
+    const repaired = authPolicy.normalizeProfile({
+      fullName: repairText(previousProfile.fullName, base.fullName, 100, true),
+      shortName: repairText(previousProfile.shortName, base.shortName, 30, true),
+      avatarURL: typeof previousProfile.avatarURL === 'string'
       && /^https:\/\/[^\s<>]+$/i.test(previousProfile.avatarURL)
       ? previousProfile.avatarURL
-      : base.avatarURL;
+      : base.avatarURL,
+      city: repairText(previousProfile.city, '', 80),
+      bio: repairText(previousProfile.bio, '', 500),
+      profession: repairText(previousProfile.profession, '', 80),
+      school: repairText(previousProfile.school, base.school, 120),
+      graduationYear: Number.isInteger(previousProfile.graduationYear)
+        && previousProfile.graduationYear >= 1900
+        && previousProfile.graduationYear <= 2100
+        ? previousProfile.graduationYear
+        : base.graduationYear
+    }, base);
     await setDoc(profileRef, {
       uid: user.uid,
-      fullName: validText(previousProfile.fullName, base.fullName, 100, true),
-      shortName: validText(previousProfile.shortName, base.shortName, 30, true),
-      avatarURL,
-      city: validText(previousProfile.city, '', 80),
-      bio: validText(previousProfile.bio, '', 500),
-      profession: validText(previousProfile.profession, '', 80),
-      school: validText(previousProfile.school, base.school, 120),
-      graduationYear: Number.isInteger(previousProfile.graduationYear)
-        ? previousProfile.graduationYear
-        : base.graduationYear,
+      ...repaired,
       email: deleteField(),
       role: deleteField(),
       status: deleteField(),
@@ -328,31 +312,42 @@ async function ensureProfile(user){
 
 export async function saveProfile(data){
   if (!runtime.user) throw new Error('Ilki Google bilen giriş ediň.');
-  const allowed = ['fullName', 'shortName', 'city', 'profession', 'bio', 'avatarURL', 'school', 'graduationYear'];
-  const clean = Object.fromEntries(Object.entries(data).filter(([key]) => allowed.includes(key)));
-  if ('avatarURL' in clean) clean.avatarURL = normalizeHttpUrl(clean.avatarURL);
-  if (String(clean.fullName || '').length > 100) throw new Error('Doly at 100 belgiden uzyn bolmaly däl.');
-  if (String(clean.shortName || '').length > 30) throw new Error('Gysga at 30 belgiden uzyn bolmaly däl.');
-  if (String(clean.city || '').length > 80) throw new Error('Şäher 80 belgiden uzyn bolmaly däl.');
-  if (String(clean.profession || '').length > 80) throw new Error('Hünär 80 belgiden uzyn bolmaly däl.');
-  if (String(clean.bio || '').length > 500) throw new Error('Bio 500 belgiden uzyn bolmaly däl.');
+  const clean = authPolicy.normalizeProfile(data, runtime.profile || {});
   await setDoc(doc(db, 'profiles', runtime.user.uid), {
     ...clean,
     uid: runtime.user.uid,
     updatedAt: serverTimestamp()
   }, { merge: true });
+  runtime.profile = { ...runtime.profile, ...clean };
+  bridge.setCurrentUser(runtime.profile);
+  return clean;
 }
 
 export async function completeOnboarding(data){
   if (!runtime.user) throw new Error('Ilki Google bilen giriş ediň.');
-  await saveProfile(data);
-  await setDoc(doc(db, 'users', runtime.user.uid), {
-    onboardingComplete: true,
-    acceptedCommunityRulesAt: serverTimestamp(),
-    updatedAt: serverTimestamp()
-  }, { merge: true });
+  const uid = runtime.user.uid;
+  const clean = authPolicy.normalizeProfile(data, runtime.profile || {});
+  const userRef = doc(db, 'users', uid);
+  const profileRef = doc(db, 'profiles', uid);
+  await runTransaction(db, async transaction => {
+    const accountSnapshot = await transaction.get(userRef);
+    const account = authPolicy.assertActiveAccount(accountSnapshot.exists()
+      ? accountSnapshot.data()
+      : null);
+    transaction.set(profileRef, {
+      ...clean,
+      uid,
+      updatedAt: serverTimestamp()
+    }, { merge: true });
+    transaction.set(userRef, {
+      onboardingComplete: true,
+      acceptedCommunityRulesAt: serverTimestamp(),
+      updatedAt: serverTimestamp()
+    }, { merge: true });
+    return account;
+  });
   runtime.account = { ...runtime.account, onboardingComplete: true };
-  runtime.profile = { ...runtime.profile, ...data };
+  runtime.profile = { ...runtime.profile, ...clean };
   bridge.setCurrentUser(runtime.profile);
   await startMemberData();
   window.dispatchEvent(new CustomEvent('klas-account', {
@@ -538,12 +533,15 @@ async function startMemberData(){
   await setPresence(true).catch(() => {});
 }
 
-async function signedIn(user){
-  bridge.setCloudMode(true);
-  runtime.user = user;
+async function signedIn(user, revision){
   const result = await ensureProfile(user);
+  if (revision !== authRevision || auth.currentUser?.uid !== user.uid) {
+    throw authPolicy.createError('klas/auth-superseded');
+  }
+  runtime.user = user;
   runtime.account = result.account;
   runtime.profile = result.profile;
+  bridge.setCloudMode(true);
   bridge.setCurrentUser(runtime.profile);
   updateAuthButton({ signedIn: true });
   if (result.needsOnboarding) {
@@ -561,6 +559,8 @@ async function signedIn(user){
       needsOnboarding: result.needsOnboarding
     }
   }));
+  authBootstrap.resolve(user.uid, result);
+  return result;
 }
 
 function signedOut(){
@@ -570,7 +570,12 @@ function signedOut(){
   stop();
   bridge.setCloudMode(false);
   updateAuthButton({ signedIn: false });
-  setStatus('Ýerli režim · giriş ýok');
+  if (lastAuthFailure) {
+    setStatus(authErrorMessage(lastAuthFailure), 'error');
+    lastAuthFailure = null;
+  } else {
+    setStatus('Ýerli režim · giriş ýok');
+  }
   window.dispatchEvent(new CustomEvent('klas-auth', { detail: { user: null } }));
 }
 
@@ -581,23 +586,41 @@ window.addEventListener('pagehide', () => {
   if (runtime.user) setPresence(false).catch(() => {});
 });
 
-try { await setPersistence(auth, browserLocalPersistence); }
-catch (error) { console.warn('Auth persistence sazlanmady', error); }
+try {
+  await setPersistence(auth, browserLocalPersistence);
+  runtime.authPersistence = 'local';
+} catch (error) {
+  runtime.authPersistence = 'limited';
+  console.warn('Auth persistence sazlanmady', error);
+}
 
 onAuthStateChanged(auth, user => {
+  const revision = ++authRevision;
   if (user) {
-    const googleAccount = user.providerData?.some(item => item.providerId === 'google.com');
-    if (!googleAccount) {
-      toast('Klas-a diňe Google akkaunty bilen girip bolýar.');
+    if (!authPolicy.isGoogleUser(user)) {
+      const error = authPolicy.createError(
+        'klas/account-inactive',
+        'Klas-a diňe Google akkaunty bilen girip bolýar.'
+      );
+      lastAuthFailure = error;
+      authBootstrap.reject(user.uid, error);
+      toast(error.message);
       signOut(auth).catch(() => {});
       return;
     }
-    signedIn(user).catch(async error => {
-      handleError(error, 'Profil başlangyjy');
-      if (!String(error?.code || '').includes('permission-denied')) {
-        toast(error?.message || 'Google akkaunty açylmady.');
+    updateAuthButton({ busy: true, signedIn: false });
+    setStatus('Google akkaunty we Klas profili barlanýar…');
+    signedIn(user, revision).catch(async error => {
+      authBootstrap.reject(user.uid, error);
+      if (revision !== authRevision || auth.currentUser?.uid !== user.uid) return;
+      lastAuthFailure = error;
+      if (authPolicy.isExpectedError(error)) {
+        setStatus(authErrorMessage(error), 'error');
+      } else {
+        handleError(error, 'Profil başlangyjy');
       }
-      await signOut(auth).catch(() => {});
+      toast(authErrorMessage(error));
+      if (auth.currentUser?.uid === user.uid) await signOut(auth).catch(() => {});
     });
   } else signedOut();
 });

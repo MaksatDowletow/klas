@@ -10,6 +10,9 @@ on:
       - firestore.indexes.json
       - firebase.json
       - .firebaserc
+      - package.json
+      - package-lock.json
+      - tests/firestore-rules.test.mjs
       - .github/workflows/deploy-firestore.yml
 
 permissions:
@@ -70,8 +73,13 @@ jobs:
           grep -q "get('status', 'pending') == 'pending'" firestore.rules
           grep -q "'uid', 'fullName', 'shortName', 'email', 'role', 'status', 'admin'" firestore.rules
 
-      - name: Install Firebase CLI
-        run: npm install --global firebase-tools@latest
+      - name: Install pinned Firebase test tools
+        run: |
+          npm ci
+          npm install --global firebase-tools@15.24.0
+
+      - name: Test Firestore authorization rules
+        run: npm run test:rules
 
       - name: Deploy Firestore rules and indexes
         shell: bash
