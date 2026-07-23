@@ -17,6 +17,11 @@ service cloud.firestore {
       return isProvisionedMember()
         && get(accountPath(request.auth.uid)).data.get('onboardingComplete', true) == true;
     }
+    function canReadOwnProfile(uid) {
+      return isSelf(uid)
+        && exists(accountPath(uid))
+        && get(accountPath(uid)).data.get('status', 'active') in ['active', 'pending'];
+    }
     function validText(value, maxSize, required) {
       return value is string
         && value.size() <= maxSize
@@ -192,7 +197,7 @@ service cloud.firestore {
     }
 
     match /profiles/{uid} {
-      allow read: if isActiveMember();
+      allow read: if isActiveMember() || canReadOwnProfile(uid);
       allow create: if isProvisionedMember() && isSelf(uid)
         && request.resource.data.uid == request.auth.uid
         && request.resource.data.keys().hasOnly([

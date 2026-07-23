@@ -1,2 +1,2 @@
-Klas v6.0.0
-Race-safe Google registration, atomic onboarding, and tested Firestore authorization
+Klas v6.0.1
+Correct first-login provisioning order with blocked-safe own-profile bootstrap access

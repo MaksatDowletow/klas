@@ -9,6 +9,7 @@ import {
 import {
   collection,
   doc,
+  getDoc,
   getDocs,
   serverTimestamp,
   setDoc,
@@ -110,6 +111,20 @@ test('only Google users can create a least-privilege account', async () => {
   ));
 });
 
+test('first login can inspect its own profile only after account provisioning', async () => {
+  const uid = 'first-login-user';
+  const db = googleContext(uid).firestore();
+  const ownProfile = doc(db, 'profiles', uid);
+
+  await assertFails(getDoc(ownProfile));
+  await assertSucceeds(setDoc(doc(db, 'users', uid), newAccount(uid)));
+  const emptyProfile = await assertSucceeds(getDoc(ownProfile));
+  assert.equal(emptyProfile.exists(), false);
+  await assertSucceeds(setDoc(ownProfile, newProfile(uid)));
+  await assertSucceeds(getDoc(ownProfile));
+  await assertFails(getDocs(collection(db, 'profiles')));
+});
+
 test('onboarding profile and consent become visible in one atomic commit', async () => {
   const uid = 'onboarding-user';
   const db = googleContext(uid).firestore();
@@ -166,7 +181,16 @@ test('onboarding cannot be completed without a profile and recorded consent', as
 
 test('safe legacy recovery allows pending to active but never blocked to active', async () => {
   await seedAccount('legacy-user', { role: 'legacy-owner', status: 'pending' });
+  await environment.withSecurityRulesDisabled(async context => {
+    await setDoc(doc(context.firestore(), 'profiles', 'legacy-user'), {
+      ...newProfile('legacy-user'),
+      lastSeen: new Date(),
+      createdAt: new Date(),
+      updatedAt: new Date()
+    });
+  });
   const legacyDb = googleContext('legacy-user').firestore();
+  await assertSucceeds(getDoc(doc(legacyDb, 'profiles', 'legacy-user')));
   await assertSucceeds(setDoc(doc(legacyDb, 'users', 'legacy-user'), {
     role: 'user',
     status: 'active',
@@ -175,12 +199,21 @@ test('safe legacy recovery allows pending to active but never blocked to active'
   }, { merge: true }));
 
   await seedAccount('blocked-user', { status: 'blocked' });
+  await environment.withSecurityRulesDisabled(async context => {
+    await setDoc(doc(context.firestore(), 'profiles', 'blocked-user'), {
+      ...newProfile('blocked-user'),
+      lastSeen: new Date(),
+      createdAt: new Date(),
+      updatedAt: new Date()
+    });
+  });
   const blockedDb = googleContext('blocked-user').firestore();
   await assertFails(setDoc(doc(blockedDb, 'users', 'blocked-user'), {
     status: 'active',
     lastLogin: serverTimestamp(),
     updatedAt: serverTimestamp()
   }, { merge: true }));
+  await assertFails(getDoc(doc(blockedDb, 'profiles', 'blocked-user')));
   await assertFails(getDocs(collection(blockedDb, 'profiles')));
 });
 
