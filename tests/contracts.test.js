@@ -62,3 +62,18 @@ test('media grid and post media use the shared viewer', () => {
   assert.match(posts, /data-post-media/);
   assert.match(posts, /KlasMediaViewer\?\.open/);
 });
+
+test('Cloudinary configuration is central and requires no member setup', () => {
+  const html = read('index.html');
+  const config = read('klas-config.js');
+  const core = read('klas-backend-core.js');
+  const ui = read('klas-backend-ui.js');
+  assert.doesNotMatch(html, /configureCloudinaryBtn|cloudinaryState/);
+  assert.match(html, /Media ýüklemesi/);
+  assert.match(html, /Awto sazlanan/);
+  assert.match(config, /cloudName: 'fitojlfl'/);
+  assert.match(config, /uploadPreset: 'klas_unsigned'/);
+  assert.match(core, /return config\.cloudinary \|\| \{\}/);
+  assert.doesNotMatch(core, /klas-cloudinary-public-config|cloudStore|saveCloudConfig/);
+  assert.doesNotMatch(ui, /cloudSettings|configureCloudinaryBtn|saveCloudConfig/);
+});

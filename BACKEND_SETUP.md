@@ -100,7 +100,7 @@ API Secret-i public repository-ä hiç wagt goýmaň.
 - custom public ID gadagan;
 - asset folder: `klas`.
 
-Bu bahalar `klas-config.js` içinde production default hökmünde sazlandy. Klas-da **Sazlamalar → Cloudinary media → Sazla** bölümi olary görkezýär we zerur bolsa diňe şol brauzer üçin üýtgetmäge mümkinçilik berýär.
+Bu bahalar `klas-config.js` içinde merkezi production konfigurasiýasy hökmünde sazlandy. Ulanyjy hiç zat girizmeýär: Google bilen giriş eden işjeň agza media saýlanda Klas degişli Cloudinary konfigurasiýasyny awtomatik ulanýar. Brauzer boýunça aýratyn Cloudinary override ýok.
 
 ## Esasy Firestore kolleksiýalary
 

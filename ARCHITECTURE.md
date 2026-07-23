@@ -41,7 +41,7 @@ This permits future migrations without deleting a member's local fallback data. 
 - Authentication is Google popup only.
 - Firestore Rules are the authorization boundary; UI checks are convenience, not security.
 - Profile/member data requires a Google token and an active Klas account.
-- Browser media uploads use a constrained unsigned Cloudinary preset. The Cloudinary API secret is never exposed.
+- Browser media uploads use one centrally defined, constrained unsigned Cloudinary preset. Members do not configure provider values per browser, and the Cloudinary API secret is never exposed.
 - User-provided URLs are HTTPS-only, and rendered text must be escaped before insertion into HTML.
 
 ## Verification

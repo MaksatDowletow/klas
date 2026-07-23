@@ -31,6 +31,8 @@ Deployment we Firebase Console sazlamalary üçin `BACKEND_SETUP.md`, gizlinlik 
 
 `klas-media-viewer.js` Media merkezi we postlardaky surat/wideolar üçin aýratyn fullscreen viewer berýär: thumbnail lenta, zoom/pan/pinch, touch swipe, öwürmek, awto-slaýd, link/Share, asyl faýl we klawiatura dolandyryşy. Cloudinary suratlary grid-de awtomatik optimizirlenen thumbnail bilen görkezilýär; asyl faýl diňe viewer açylanda ýüklenýär.
 
+Cloudinary `fitojlfl / klas_unsigned` merkezi production konfigurasiýasydyr. Ulanyjy Cloud Name ýa-da preset girizmeýär; media ýüklemesi işjeň Google agzalary üçin awtomatik işleýär we brauzer boýunça aýratyn override ulanylmaýar.
+
 Arhitektura serhedi we howpsuzlyk düzgünleri `ARCHITECTURE.md` faýlynda. Lokal regression testleri:
 
 ```sh

@@ -53,15 +53,6 @@ export const safe = value => String(value ?? '').replace(/[&<>'"]/g, char => ({
 }[char]));
 export const toast = text => bridge.toast(text);
 
-const cloudKey = 'klas-cloudinary-public-config';
-const cloudStore = window.KlasRuntime?.createStorage({
-  storage: (() => {
-    try { return window.localStorage; }
-    catch { return null; }
-  })(),
-  key: cloudKey,
-  onError: entry => window.KlasRuntime?.reportError(new Error(entry.message), 'cloudinary:storage')
-});
 let presenceSequence = Promise.resolve();
 let authOperation = null;
 
@@ -144,13 +135,7 @@ function updateAuthButton({ busy = false, signedIn = Boolean(runtime.user) } = {
 }
 
 export function cloudConfig(){
-  let saved = cloudStore?.read({}) || {};
-  if (!cloudStore) {
-    try { saved = JSON.parse(localStorage.getItem(cloudKey) || '{}'); }
-    catch (error) { window.KlasRuntime?.reportError(error, 'cloudinary:read'); }
-  }
-  if (!saved || typeof saved !== 'object' || Array.isArray(saved)) saved = {};
-  return { ...config.cloudinary, ...saved };
+  return config.cloudinary || {};
 }
 
 export function cloudReady(){
@@ -158,36 +143,10 @@ export function cloudReady(){
   return Boolean(value.cloudName && value.uploadPreset);
 }
 
-export function updateCloudState(){
-  const element = $('#cloudinaryState');
-  if (!element) return;
-  const value = cloudConfig();
-  element.textContent = cloudReady()
-    ? `${value.cloudName} / ${value.uploadPreset}`
-    : 'Cloud Name girizilmedik';
-  element.classList.toggle('ready', cloudReady());
-  element.classList.toggle('missing', !cloudReady());
-}
-
-export function saveCloudConfig(cloudName, uploadPreset){
-  const name = String(cloudName || '').trim();
-  const preset = String(uploadPreset || '').trim();
-  if (!/^[a-zA-Z0-9_-]+$/.test(name)) throw new Error('Cloud Name diňe harp, san, tire we aşaky çyzyk kabul edýär.');
-  if (!/^[a-zA-Z0-9_-]+$/.test(preset)) throw new Error('Upload Preset formaty nädogry.');
-  const value = { cloudName: name, uploadPreset: preset };
-  let saved = cloudStore?.write(value) ?? false;
-  if (!cloudStore) {
-    try { localStorage.setItem(cloudKey, JSON.stringify(value)); saved = true; }
-    catch (error) { window.KlasRuntime?.reportError(error, 'cloudinary:save'); }
-  }
-  if (!saved) throw new Error('Cloudinary sazlamasy brauzerde saklanmady. Site data rugsadyny barlaň.');
-  updateCloudState();
-}
-
 export async function uploadMedia(file, folder = 'klas/posts'){
   if (!file) return '';
   const value = cloudConfig();
-  if (!cloudReady()) throw new Error('Cloudinary Cloud Name we unsigned Upload Preset sazlanmady.');
+  if (!cloudReady()) throw new Error('Klas media hyzmatynyň merkezi konfigurasiýasy doly däl.');
   const video = file.type.startsWith('video/');
   const image = file.type.startsWith('image/');
   if (!video && !image) throw new Error('Diňe surat ýa-da wideo kabul edilýär.');
