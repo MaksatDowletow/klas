@@ -11,6 +11,7 @@ const read = file => fs.readFileSync(path.join(root, file), 'utf8');
 test('HTML loads the runtime before feature scripts and design system last', () => {
   const html = read('index.html');
   assert.ok(html.indexOf('klas-runtime.js') < html.indexOf('klas-v4-1.js'));
+  assert.ok(html.indexOf('klas-auth-policy.js') < html.indexOf('klas-backend-bootstrap.js'));
   assert.ok(html.indexOf('klas-media-viewer.js') < html.indexOf('klas-v4-1.js'));
   assert.ok(html.indexOf('klas-design-system.css') > html.indexOf('klas-livechat.css'));
   assert.ok(html.indexOf('klas-media-viewer.css') > html.indexOf('klas-design-system.css'));
@@ -39,10 +40,14 @@ test('release and offline shell versions stay aligned', () => {
 
 test('authentication remains Google popup only', () => {
   const core = read('klas-backend-core.js');
+  const policy = read('klas-auth-policy.js');
   const rules = read('firestore.rules');
   assert.match(core, /GoogleAuthProvider/);
   assert.match(core, /signInWithPopup/);
   assert.doesNotMatch(core, /signInWithRedirect/);
+  assert.match(core, /authBootstrap\.wait\(credential\.user\.uid\)/);
+  assert.match(core, /runTransaction\(db, async transaction =>/);
+  assert.match(policy, /'klas\/account-blocked'/);
   assert.match(rules, /sign_in_provider == 'google\.com'/);
 });
 
