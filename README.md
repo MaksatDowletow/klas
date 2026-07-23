@@ -33,6 +33,8 @@ Deployment we Firebase Console sazlamalary üçin `BACKEND_SETUP.md`, gizlinlik 
 
 Cloudinary `fitojlfl / klas_unsigned` merkezi production konfigurasiýasydyr. Ulanyjy Cloud Name ýa-da preset girizmeýär; media ýüklemesi işjeň Google agzalary üçin awtomatik işleýär we brauzer boýunça aýratyn override ulanylmaýar.
 
+Firestore 1:1 çaty ähli production giriş nokatlarynda — synpdaş, onlaýn avatar, global gözleg we **Täze çat** modal — şol bir deterministik dialogy açýar. Täze dialog diňe iki işjeň, onboarding-i tamamlanan agzanyň arasynda döredilýär; habarlary, typing ýagdaýyny we `Görüldi` belgisini diňe şol iki gatnaşyjy okap/ýazyp bilýär.
+
 Arhitektura serhedi we howpsuzlyk düzgünleri `ARCHITECTURE.md` faýlynda. Lokal regression testleri:
 
 ```sh

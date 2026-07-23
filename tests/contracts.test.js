@@ -64,6 +64,18 @@ test('first-login bootstrap provisions the account before reading its profile', 
   assert.match(rules, /allow read: if isActiveMember\(\) \|\| canReadOwnProfile\(uid\)/);
 });
 
+test('Firebase chat owns every production conversation entry point', () => {
+  const chat = read('klas-backend-chat.js');
+  const ui = read('klas-backend-ui.js');
+  const rules = read('firestore.rules');
+  assert.match(chat, /const snapshot = await getDoc\(reference\)/);
+  assert.match(ui, /\[data-message-person\],\[data-online-chat\],\[data-search-person\],\[data-chat-choice\]/);
+  assert.match(rules, /allow get: if isActiveMember\(\)/);
+  assert.match(rules, /!exists\(conversationPath\(conversationId\)\)/);
+  assert.match(rules, /conversationId == 'direct_'/);
+  assert.match(rules, /isActiveAccount\(request\.resource\.data\.participants\[1\]\)/);
+});
+
 test('service worker precaches the architecture runtime', () => {
   const worker = read('service-worker.js');
   assert.match(worker, /\.\/klas-runtime\.js/);

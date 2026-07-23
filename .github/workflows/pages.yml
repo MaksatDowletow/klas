@@ -98,13 +98,17 @@ jobs:
           grep -q 'Gizlinlik we jemgyýet düzgünleri' privacy.html
           grep -q "sign_in_provider == 'google.com'" firestore.rules
           grep -q 'function isActiveMember()' firestore.rules
+          grep -q 'function isActiveAccount(uid)' firestore.rules
           grep -q 'function canReadOwnProfile(uid)' firestore.rules
+          grep -Fq 'const id = `direct_' klas-backend-chat.js
+          grep -Fq '[data-message-person],[data-online-chat],[data-search-person],[data-chat-choice]' klas-backend-ui.js
+          grep -q 'allow get: if isActiveMember()' firestore.rules
           grep -q '@media(max-width:760px)' klas-v4.css
           grep -q '"start_url": "/klas/' manifest.webmanifest
           grep -q '"scope": "/klas/"' manifest.webmanifest
           grep -q 'https://maksatdowletow.github.io/klas/' index.html
           ! grep -q 'github.io/Klas/' index.html
-          grep -q "version: '6.0.1'" klas-config.js
+          grep -q "version: '6.0.2'" klas-config.js
           grep -q 'klas-runtime.js' service-worker.js
           grep -q 'klas-design-system.css' service-worker.js
           grep -q 'klas-media-viewer.js' service-worker.js
@@ -163,7 +167,7 @@ jobs:
           cat > _site/release.json <<EOF
           {
             "app": "Klas",
-            "version": "6.0.1",
+            "version": "6.0.2",
             "commit": "${GITHUB_SHA}",
             "dynamicPages": true,
             "realtimeComments": true,
@@ -173,6 +177,8 @@ jobs:
             "raceSafeGoogleAuth": true,
             "firstLoginProvisioning": true,
             "atomicOnboarding": true,
+            "firestoreDirectChat": true,
+            "unifiedChatEntrypoints": true,
             "mediaGalleryViewer": true,
             "centralizedCloudinaryConfig": true,
             "pwa": true,
