@@ -16,10 +16,29 @@ function openNewChat(){const available=state.people.map(p=>`<button class="choic
 
 function renderMedia(){
   const filter=state.mediaFilter||'all';$$('[data-media-filter]').forEach(b=>{const active=b.dataset.mediaFilter===filter;b.classList.toggle('active',active);b.setAttribute('aria-pressed',String(active))});const list=state.media.filter(m=>filter==='all'||m.type===filter);
-  $('#mediaGrid').innerHTML=list.map(m=>{const src=safeLocalUrl(m.src,{allowDataImage:m.type==='image'});if(!src)return '';return `<button class="media-item" data-media="${esc(m.id)}">${m.type==='image'?`<img src="${esc(src)}" alt="${esc(m.title)}" loading="lazy">`:isDirectVideo(src)?`<video src="${esc(src)}" muted preload="metadata"></video>`:`<div class="media-placeholder">🎥</div>`}<span class="media-label">${esc(m.title)}</span></button>`}).join('')||'<div class="empty">Bu bölümde media ýok.</div>';
+  $('#mediaGrid').innerHTML=list.map(m=>{const src=safeLocalUrl(m.src,{allowDataImage:m.type==='image'});if(!src)return '';const thumbnail=window.KlasMediaViewer?.cloudinaryThumbnail(src,m.type)||src;const preview=m.type==='image'||thumbnail!==src?`<img src="${esc(thumbnail)}" alt="${esc(m.title)}" loading="lazy">`:isDirectVideo(src)?`<video src="${esc(src)}" muted preload="metadata" playsinline></video>`:`<div class="media-placeholder">🎥</div>`;return `<button class="media-item" data-media="${esc(m.id)}" aria-label="${esc(m.title)} mediasyny aç">${preview}<span class="media-type-badge">${m.type==='video'?'▶ Wideo':'▧ Surat'}</span><span class="media-label">${esc(m.title)}</span></button>`}).join('')||'<div class="empty">Bu bölümde media ýok.</div>';
   $$('[data-media]').forEach(b=>b.onclick=()=>viewMedia(b.dataset.media));
 }
-function viewMedia(id){const m=state.media.find(x=>x.id===id);if(!m)return;const src=safeLocalUrl(m.src,{allowDataImage:m.type==='image'});if(!src){toast('Media salgysy howpsuz däl');return}const content=m.type==='image'?`<img src="${esc(src)}" alt="${esc(m.title)}">`:isDirectVideo(src)?`<video controls autoplay src="${esc(src)}"></video>`:`<div class="story-view"><h2>${esc(m.title)}</h2><a class="primary" target="_blank" rel="noopener noreferrer" href="${esc(src)}">Wideony aç</a></div>`;openLightbox(`${content}${m.ownerId==='me'?`<button class="danger media-delete" data-delete-media="${esc(m.id)}">Aýyr</button>`:''}`);$('[data-delete-media]')?.addEventListener('click',()=>{if(confirm('Mediany aýyrmalymy?')){state.media=state.media.filter(x=>x.id!==id);save();renderMedia();closeLightbox();toast('Media aýryldy')}});}
+function mediaViewerList(){const filter=state.mediaFilter||'all';return state.media.filter(m=>filter==='all'||m.type===filter).map(m=>({...m,description:m.description||''}));}
+function ownsMedia(item){return item.ownerId==='me'||Boolean(item.remote&&item.ownerId&&(item.ownerId===state.currentUser.uid||item.ownerId===state.currentUser.id));}
+async function deleteViewerMedia(item){
+  if(!confirm('Mediany hemişelik aýyrmalymy?'))return false;
+  if(item.remote){
+    if(!window.KlasBackend?.deleteMedia)throw new Error('Firebase media dolandyryşy entek taýýar däl.');
+    await window.KlasBackend.deleteMedia(item.id);
+  }else{
+    state.media=state.media.filter(media=>media.id!==item.id);
+    save();
+    renderMedia();
+  }
+  toast('Media aýryldy');
+  return true;
+}
+function viewMedia(id){
+  const m=state.media.find(x=>x.id===id);if(!m)return;
+  if(!safeLocalUrl(m.src,{allowDataImage:m.type==='image'})){toast('Media salgysy howpsuz däl');return}
+  if(!window.KlasMediaViewer?.open(mediaViewerList(),id,{canDelete:ownsMedia,onDelete:deleteViewerMedia}))toast('Media viewer açylmady');
+}
 function openMediaUpload(){openModal({title:'Media ýükle',confirmText:'Ýükle',body:`<div class="form-grid"><div class="field"><label>Görnüşi</label><select id="mediaType"><option value="image">Surat</option><option value="video">Wideo URL</option></select></div><div class="field"><label>Ady</label><input id="mediaTitle" maxlength="100"></div><div class="field" id="mediaFileField"><label>Surat faýly</label><input id="mediaFile" type="file" accept="image/*"><div class="field-help">Iň köp 1.5 MB.</div></div><div class="field"><label>Ýa-da URL</label><input id="mediaUrl" type="url" placeholder="https://..."></div></div>`,onConfirm:async()=>{const type=$('#mediaType').value;const file=$('#mediaFile')?.files[0];const src=type==='image'?(file?await fileToDataUrl(file):normalizeLocalUrl($('#mediaUrl').value.trim())):normalizeLocalUrl($('#mediaUrl').value.trim());if(!src)throw new Error('Faýl ýa-da URL giriziň.');state.media.unshift({id:uid(),type,src,title:$('#mediaTitle').value.trim()||'Täze media',ownerId:'me'});save();renderMedia();closeModal();toast('Media ýüklendi')}});$('#mediaType').onchange=e=>$('#mediaFileField').classList.toggle('hidden',e.target.value==='video');}
 
 function renderEvents(){

@@ -156,4 +156,4 @@ const sd=t.closest('[data-delete-story]');if(sd){const v=bridge.getState().stori
 
 document.addEventListener('submit',async e=>{if(!runtime.user)return;const f=e.target;if(f.matches('[data-comment-form]')){const p=bridge.getPost(f.dataset.commentForm);if(p?.remote){e.preventDefault();e.stopImmediatePropagation();const i=f.querySelector('input'),text=i.value.trim();if(text){await addComment(p.id,text);await notifyPostAuthor(p.id,'comment',`${runtime.profile?.shortName||'Bir ulanyjy'} postuňyza teswir ýazdy`,'💬');i.value=''}return}}if(f.matches('#chatForm')){const c=bridge.getActiveChat();if(c?.remote){e.preventDefault();e.stopImmediatePropagation();const i=$('#chatInput'),text=i.value.trim();if(text){try{await sendMessage(c.id,text);i.value=''}catch(error){toast(error.message||'Habar ugradylmady')}}return}}},true);
 
-window.KlasBackend=Object.freeze({login,logout,uploadMedia,cloudReady,cloudSettings,createPost,saveProfile,ensureConversation,sendMessage});
+window.KlasBackend=Object.freeze({login,logout,uploadMedia,cloudReady,cloudSettings,createPost,saveProfile,ensureConversation,sendMessage,deleteMedia});

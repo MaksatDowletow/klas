@@ -10,7 +10,8 @@ Klas is a static, zero-build web application deployed to GitHub Pages. Dynamic m
 4. `klas-bridge.js` is the compatibility boundary between local state and authenticated cloud state.
 5. `klas-backend-*.js` owns Google-only authentication, Firestore subscriptions, Cloudinary uploads, live chat, notifications, and WebRTC calls.
 6. `klas-pwa.js` and `service-worker.js` own installation, offline shell caching, and safe application updates.
-7. `klas-design-system.css` is the final CSS layer for shared tokens, accessibility states, and component polish.
+7. `klas-design-system.css` is the shared token, accessibility-state, and component-polish layer.
+8. `klas-media-viewer.js` + `klas-media-viewer.css` provide an isolated photo/video gallery surface. The module owns fullscreen, zoom/pan, rotation, swipe/pinch, slideshow, keyboard controls, sharing, and Cloudinary thumbnail transformation without changing the legacy story lightbox.
 
 ## State contract
 
