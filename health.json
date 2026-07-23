@@ -1,6 +1,6 @@
 {
   "app": "Klas",
-  "version": "5.7.1",
-  "features": ["google-only-auth", "popup-auth", "legacy-account-recovery", "account-onboarding", "active-member-rules", "auth-error-recovery", "firebase-realtime-chat", "typing", "read-receipts", "webrtc-video-call", "camera-switch", "call-recovery", "pwa-windows", "pwa-android", "offline-shell", "install-prompt", "responsive-navigation", "mobile-chat-view", "safe-area-layout"],
+  "version": "5.8.0",
+  "features": ["runtime-kernel", "versioned-local-store", "client-error-boundary", "design-system", "runtime-diagnostics", "google-only-auth", "popup-auth", "legacy-account-recovery", "account-onboarding", "active-member-rules", "auth-error-recovery", "firebase-realtime-chat", "typing", "read-receipts", "webrtc-video-call", "camera-switch", "call-recovery", "pwa-windows", "pwa-android", "offline-shell", "install-prompt", "responsive-navigation", "mobile-chat-view", "safe-area-layout"],
   "deployedAt": "2026-07-23"
 }

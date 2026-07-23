@@ -1,6 +1,7 @@
 'use strict';
 
-const STORAGE_KEY = 'klas-v4-state';
+const appRuntime = window.KlasRuntime;
+const STORAGE_KEY = appRuntime?.STORAGE_KEY || 'klas-v4-state';
 const APP_VERSION = 4;
 const $ = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => [...root.querySelectorAll(s)];
@@ -115,14 +116,28 @@ function normalizeState(raw){
   return s;
 }
 
-let state;
-try { state = normalizeState(JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null')); }
-catch { state = clone(defaultState); }
+function readLocalState(){
+  if(appRuntime?.stateStore) return appRuntime.stateStore.read(null);
+  try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null'); }
+  catch(error){ appRuntime?.reportError(error, 'state:read'); return null; }
+}
+
+let state = normalizeState(readLocalState());
 
 function save(){
-  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
-  catch(error){ toast('Saklanyş ýeri doldy. Uly suratlary aýyryň.'); console.error(error); }
+  let saved = false;
+  if(appRuntime?.stateStore) saved = appRuntime.stateStore.write(state);
+  else {
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); saved = true; }
+    catch(error){ appRuntime?.reportError(error, 'state:save'); }
+  }
+  if(!saved){
+    appRuntime?.updateRuntimeUI();
+    toast('Maglumat saklanmady. Brauzeriň saklanyş rugsadyny barlaň.');
+  }
   updateBadges();
+  appRuntime?.emit(appRuntime.EVENTS.stateChange, { collections:['local'], cloudMode:false });
+  return saved;
 }
 function toast(text){ const el=$('#toast'); el.textContent=text; el.classList.add('show'); clearTimeout(window.__toastTimer); window.__toastTimer=setTimeout(()=>el.classList.remove('show'),2300); }
 function addNotification(text, icon='🔔', page='feed'){
@@ -139,7 +154,7 @@ function fileToDataUrl(file, maxBytes=1500000){
   });
 }
 
-const PAGE_NAMES = new Set(['feed','classmates','messages','groups','media','events','saved','notifications','settings']);
+const PAGE_NAMES = new Set(appRuntime?.PAGES || ['feed','classmates','messages','groups','media','events','saved','notifications','settings']);
 let pageRenderFrame = 0;
 
 function activePageName(){
@@ -208,7 +223,8 @@ function toggleMobileSearch(force){
 }
 
 function showPage(requestedName, updateHash=true){
-  const name = PAGE_NAMES.has(requestedName) && $(`#page-${requestedName}`) ? requestedName : 'feed';
+  const normalizedName = appRuntime?.normalizePage(requestedName) || requestedName;
+  const name = PAGE_NAMES.has(normalizedName) && $(`#page-${normalizedName}`) ? normalizedName : 'feed';
   $$('.page').forEach(el=>el.classList.remove('active'));
   $(`#page-${name}`)?.classList.add('active');
   $$('[data-page]').forEach(el=>el.classList.toggle('active',el.dataset.page===name));
@@ -222,10 +238,11 @@ function showPage(requestedName, updateHash=true){
     history.pushState({page:name},'',`${location.pathname}${location.search}#${name}`);
   }
   schedulePageRender(name);
-  window.dispatchEvent(new CustomEvent('klas:pagechange',{detail:{page:name}}));
-  window.scrollTo({top:0,behavior:'smooth'});
+  if(appRuntime) appRuntime.emit(appRuntime.EVENTS.pageChange, { page:name });
+  else window.dispatchEvent(new CustomEvent('klas:pagechange',{detail:{page:name}}));
+  window.scrollTo({top:0,behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth'});
 }
-function routeFromHash(){ showPage((location.hash||'#feed').slice(1),false); }
+function routeFromHash(){ showPage(appRuntime?.pageFromHash(location.hash) || (location.hash||'#feed').slice(1),false); }
 
 let modalReturnFocus = null;
 let lightboxReturnFocus = null;
@@ -240,7 +257,8 @@ function openModal({title,body,confirmText='Sakla',cancelText='Ýatyr',onConfirm
   $('#appModal').classList.add('open'); $('#appModal').setAttribute('aria-hidden','false');
   updateOverlayState();
   $('[data-modal-cancel]').onclick=closeModal;
-  const confirm=$('[data-modal-confirm]'); if(confirm) confirm.onclick=async()=>{ try{ await onConfirm?.(confirm); }catch(e){ toast(e.message||'Ýalňyşlyk ýüze çykdy'); } };
+  const confirm=$('[data-modal-confirm]');
+  if(confirm) confirm.onclick=appRuntime?.guard('modal:confirm', async()=>onConfirm?.(confirm)) || (async()=>{ try{ await onConfirm?.(confirm); }catch(e){ toast(e.message||'Ýalňyşlyk ýüze çykdy'); } });
   setTimeout(() => ($('#modalBody input, #modalBody textarea, #modalBody select, [data-modal-confirm]') || $('.modal-card'))?.focus(), 50);
 }
 function closeModal(){

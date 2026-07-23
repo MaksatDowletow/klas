@@ -21,9 +21,10 @@
   <link rel="icon" href="./assets/icons/klas-icon.svg" type="image/svg+xml" />
   <link rel="apple-touch-icon" href="./assets/icons/klas-180.png" />
   <title>Klas — Mekdep jemgyýeti</title>
-  <link rel="stylesheet" href="./klas-v4.css?v=20260723-auth2" />
-  <link rel="stylesheet" href="./klas-backend.css?v=20260723-auth2" />
-  <link rel="stylesheet" href="./klas-livechat.css?v=20260723-auth2" />
+  <link rel="stylesheet" href="./klas-v4.css?v=20260723-arch1" />
+  <link rel="stylesheet" href="./klas-backend.css?v=20260723-arch1" />
+  <link rel="stylesheet" href="./klas-livechat.css?v=20260723-arch1" />
+  <link rel="stylesheet" href="./klas-design-system.css?v=20260723-arch1" />
 </head>
 <body>
   <a class="skip-link" href="#mainContent">Esasy mazmuna geç</a>
@@ -73,6 +74,11 @@
     </aside>
 
     <main class="main" id="mainContent" tabindex="-1">
+      <div class="app-error-banner" id="appErrorBanner" role="alert" hidden>
+        <span aria-hidden="true">⚠</span>
+        <p id="appErrorText">Programmada garaşylmadyk näsazlyk boldy.</p>
+        <button type="button" id="appErrorDismissBtn" aria-label="Duýduryşy ýap">✕</button>
+      </div>
       <section class="page active stack" id="page-feed">
         <h1 class="sr-only">Klas habarlary</h1>
         <div class="card stories" id="stories"></div>
@@ -132,6 +138,7 @@
         <div class="settings-row"><div><b>Profiliň görünmegi</b><small>Häzirki wagtda profiller diňe Google bilen giriş eden Klas agzalaryna görünýär</small></div><select id="privacy" aria-label="Profiliň görünmegi" disabled><option value="school">Klas agzalary</option></select></div>
         <div class="settings-row"><div><b>Garaňky tema</b><small>Göz üçin amatly garaňky görnüş</small></div><button class="switch" id="darkSwitch" type="button" role="switch" aria-label="Garaňky tema" aria-checked="false"><span></span></button></div>
         <div class="settings-row"><div><b>Klas programmasy</b><small id="pwaInstallStatus" role="status" aria-live="polite">Offline režim taýýarlanýar…</small></div><button type="button" class="secondary" id="pwaInstallBtn" hidden>Gur</button></div>
+        <div class="settings-row runtime-row"><div><b>Programma ýagdaýy</b><small id="appRuntimeStatus" role="status" aria-live="polite">Runtime barlanýar…</small><span class="runtime-version" id="appRuntimeVersion">Klas runtime</span></div><button type="button" class="secondary" id="appRuntimeCheckBtn">Barla</button></div>
         <div class="settings-row"><div><b>Maglumatlary eksport et</b><small>Ýerli režimdäki maglumatlaryň ätiýaç nusgasyny al</small></div><button type="button" class="secondary" id="exportBtn">JSON ýükläp al</button></div>
         <div class="settings-row"><div><b>Maglumatlary import et</b><small>Öňki ýerli ätiýaç nusgany dikelt</small></div><label class="secondary file-label">JSON saýla<input type="file" id="importInput" accept="application/json"/></label></div>
         <div class="settings-row danger-row"><div><b>Ýerli maglumatlary arassala</b><small>Diňe brauzerdäki fallback maglumatlaryny başlangyç ýagdaýa getirýär</small></div><button type="button" class="danger" id="resetBtn">Arassala</button></div>
@@ -150,13 +157,14 @@
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
   <input class="hidden" type="file" id="hiddenImageInput" accept="image/*"/>
   <noscript>Bu programma üçin JavaScript işjeň bolmaly.</noscript>
-  <script src="./klas-config.js?v=20260723-auth2"></script>
-  <script src="./klas-v4-1.js?v=20260723-auth2"></script>
-  <script src="./klas-v4-2.js?v=20260723-auth2"></script>
-  <script src="./klas-v4-3.js?v=20260723-auth2"></script>
-  <script src="./klas-v4-4.js?v=20260723-auth2"></script>
-  <script src="./klas-bridge.js?v=20260723-auth2"></script>
-  <script src="./klas-pwa.js?v=20260723-auth2"></script>
-  <script type="module" src="./klas-backend-bootstrap.js?v=20260723-auth2"></script>
+  <script src="./klas-config.js?v=20260723-arch1"></script>
+  <script src="./klas-runtime.js?v=20260723-arch1"></script>
+  <script src="./klas-v4-1.js?v=20260723-arch1"></script>
+  <script src="./klas-v4-2.js?v=20260723-arch1"></script>
+  <script src="./klas-v4-3.js?v=20260723-arch1"></script>
+  <script src="./klas-v4-4.js?v=20260723-arch1"></script>
+  <script src="./klas-bridge.js?v=20260723-arch1"></script>
+  <script src="./klas-pwa.js?v=20260723-arch1"></script>
+  <script type="module" src="./klas-backend-bootstrap.js?v=20260723-arch1"></script>
 </body>
 </html>

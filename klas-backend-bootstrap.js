@@ -1,5 +1,5 @@
 const statusNode = document.getElementById('backendStatus');
-const release = '20260723-auth2';
+const release = '20260723-arch1';
 const styleHref = `./klas-livechat.css?v=${release}`;
 
 if (![...document.styleSheets].some(sheet => sheet.href?.includes('klas-livechat.css'))) {
@@ -17,6 +17,7 @@ try {
   ]);
 } catch (error) {
   console.error('Klas backend başlangyjy başartmady', error);
+  window.KlasRuntime?.reportError(error, 'backend:bootstrap');
   window.KlasBridge?.setCloudMode(false);
   if (statusNode) {
     statusNode.textContent = 'Ýerli režim · Firebase elýetersiz';
