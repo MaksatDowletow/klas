@@ -10,6 +10,7 @@ Esasy runtime faýllary:
 
 - `index.html`
 - `klas-runtime.js`
+- `klas-presence-policy.js`
 - `klas-design-system.css`
 - `klas-media-viewer.js`
 - `klas-media-viewer.css`
@@ -34,6 +35,8 @@ Deployment we Firebase Console sazlamalary üçin `BACKEND_SETUP.md`, gizlinlik 
 Cloudinary `fitojlfl / klas_unsigned` merkezi production konfigurasiýasydyr. Ulanyjy Cloud Name ýa-da preset girizmeýär; media ýüklemesi işjeň Google agzalary üçin awtomatik işleýär we brauzer boýunça aýratyn override ulanylmaýar.
 
 Firestore 1:1 çaty ähli production giriş nokatlarynda — synpdaş, onlaýn avatar, global gözleg we **Täze çat** modal — şol bir deterministik dialogy açýar. Täze dialog diňe iki işjeň, onboarding-i tamamlanan agzanyň arasynda döredilýär; habarlary, typing ýagdaýyny we `Görüldi` belgisini diňe şol iki gatnaşyjy okap/ýazyp bilýär.
+
+Online ýagdaý profil baýdagyndan aýratyn `presenceSessions/{sessionId}` realtime sessiýalary arkaly hasaplanýar. Her brauzer tab-y öz heartbeat-ini berýär; başga tab-yň ýapylmagy işjeň sessiýany öçürmeýär. Logout/pagehide ýagdaýy derrew `offline` ýazýar, duýdansyz ýapylan ýa-da interneti kesilen sessiýa bolsa 105 sekuntdan soň UI-da awtomatik könelýär. Synpdaşlar, global gözleg, sag panel we çat sözbaşysy şol bir realtime çeşmäni ulanýar.
 
 Arhitektura serhedi we howpsuzlyk düzgünleri `ARCHITECTURE.md` faýlynda. Lokal regression testleri:
 

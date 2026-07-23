@@ -12,6 +12,7 @@ test('HTML loads the runtime before feature scripts and design system last', () 
   const html = read('index.html');
   assert.ok(html.indexOf('klas-runtime.js') < html.indexOf('klas-v4-1.js'));
   assert.ok(html.indexOf('klas-auth-policy.js') < html.indexOf('klas-backend-bootstrap.js'));
+  assert.ok(html.indexOf('klas-presence-policy.js') < html.indexOf('klas-backend-bootstrap.js'));
   assert.ok(html.indexOf('klas-media-viewer.js') < html.indexOf('klas-v4-1.js'));
   assert.ok(html.indexOf('klas-design-system.css') > html.indexOf('klas-livechat.css'));
   assert.ok(html.indexOf('klas-media-viewer.css') > html.indexOf('klas-design-system.css'));
@@ -76,9 +77,30 @@ test('Firebase chat owns every production conversation entry point', () => {
   assert.match(rules, /isActiveAccount\(request\.resource\.data\.participants\[1\]\)/);
 });
 
+test('active accounts use session-scoped realtime presence instead of profile flags', () => {
+  const core = read('klas-backend-core.js');
+  const chat = read('klas-backend-chat.js');
+  const people = read('klas-v4-2.js');
+  const policy = read('klas-presence-policy.js');
+  const rules = read('firestore.rules');
+  assert.match(core, /collection\(db, 'presenceSessions'\)/);
+  assert.match(core, /orderBy\('updatedAt', 'desc'\)/);
+  assert.match(core, /presenceConfig\.heartbeatMs/);
+  assert.match(core, /presencePolicy\.aggregate\(runtime\.presenceSessions\.values\(\)/);
+  assert.match(policy, /age <= staleMs/);
+  assert.match(core, /existingStatuses\.get\(uid\) \|\| 'none'/);
+  assert.match(core, /window\.dispatchEvent\(new CustomEvent\('klas-presence'/);
+  assert.match(chat, /window\.addEventListener\('klas-presence'/);
+  assert.match(people, /class="presence-badge"/);
+  assert.match(rules, /match \/presenceSessions\/\{sessionId\}/);
+  assert.match(rules, /request\.resource\.data\.uid == request\.auth\.uid/);
+  assert.match(rules, /allow delete: if isActiveMember\(\) && resource\.data\.uid == request\.auth\.uid/);
+});
+
 test('service worker precaches the architecture runtime', () => {
   const worker = read('service-worker.js');
   assert.match(worker, /\.\/klas-runtime\.js/);
+  assert.match(worker, /\.\/klas-presence-policy\.js/);
   assert.match(worker, /\.\/klas-design-system\.css/);
   assert.match(worker, /\.\/klas-media-viewer\.js/);
   assert.match(worker, /\.\/klas-media-viewer\.css/);

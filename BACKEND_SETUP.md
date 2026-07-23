@@ -65,6 +65,10 @@ Işleýän funksiýalar:
 
 Ilkinji çat `direct_{kiçiUid}_{ulyUid}` deterministik ID bilen döredilýär. Synpdaş sanawy, onlaýn avatarlar, global gözleg we **Täze çat** modaly şol bir Firebase akymyny ulanýar; ýerli-demo dialogy Google bilen giriş edilen production režiminde ulanylmaýar. Dialog diňe `active` ýagdaýly we onboarding-i tamamlanan iki hasabyň arasynda döredilip bilner.
 
+### Realtime online ýagdaý
+
+Her açyk Klas tab-y `presenceSessions/{sessionId}` dokumentini döredýär we 45 sekuntda heartbeat berýär. Firestore listener online sanawyny ähli işjeň agzalarda derrew täzeleýär. Logout ýa-da adaty pagehide sessiýany `offline` edýär; brauzer zor bilen ýapylsa ýa-da internet kesilse, soňky heartbeat 105 sekuntdan köne bolanda UI şol sessiýany online hasaplamaýar. Bir ulanyjynyň birnäçe tab/enjam sessiýasy bolup biler; azyndan biri täze bolsa akkaunt online görünýär. Presence ýazgysyny diňe onuň Google UID eýesi üýtgedip bilýär, bloklanan ýa-da onboarding-i tamamlanmadyk hasaplar presence kolleksiýasyny okap bilmeýär.
+
 ## Wideoçat
 
 Wideoçat WebRTC ulanýar, Firestore diňe signaling maglumatlaryny saklaýar:

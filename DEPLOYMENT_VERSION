@@ -1,2 +1,2 @@
-Klas v6.0.2
-Restore secure Firestore direct-chat creation and unify every production chat entry point
+Klas v6.1.0
+Session-scoped realtime presence with heartbeat expiry and live online indicators
