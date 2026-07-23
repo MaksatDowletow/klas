@@ -19,9 +19,9 @@
       revision += 1;
       const collections = [...pendingCollections];
       pendingCollections.clear();
-      window.dispatchEvent(new CustomEvent('klas:statechange', {
-        detail: { revision, collections, cloudMode }
-      }));
+      const detail = { revision, collections, cloudMode };
+      if (window.KlasRuntime) window.KlasRuntime.emit(window.KlasRuntime.EVENTS.stateChange, detail);
+      else window.dispatchEvent(new CustomEvent('klas:statechange', { detail }));
     });
   }
 

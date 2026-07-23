@@ -54,6 +54,14 @@ export const safe = value => String(value ?? '').replace(/[&<>'"]/g, char => ({
 export const toast = text => bridge.toast(text);
 
 const cloudKey = 'klas-cloudinary-public-config';
+const cloudStore = window.KlasRuntime?.createStorage({
+  storage: (() => {
+    try { return window.localStorage; }
+    catch { return null; }
+  })(),
+  key: cloudKey,
+  onError: entry => window.KlasRuntime?.reportError(new Error(entry.message), 'cloudinary:storage')
+});
 let presenceSequence = Promise.resolve();
 let authOperation = null;
 
@@ -93,6 +101,7 @@ export function setStatus(text, kind = 'idle'){
 
 export function handleError(error, prefix = 'Firebase ýalňyşlygy'){
   console.error(prefix, error);
+  window.KlasRuntime?.reportError(error, `firebase:${prefix}`);
   const code = error?.code || error?.message || 'unknown';
   setStatus(`${prefix}: ${code}`, 'error');
   if (String(code).includes('permission-denied')) toast(`${prefix}. Firestore Rules sazlamasyny barlaň.`);
@@ -135,9 +144,12 @@ function updateAuthButton({ busy = false, signedIn = Boolean(runtime.user) } = {
 }
 
 export function cloudConfig(){
-  let saved = {};
-  try { saved = JSON.parse(localStorage.getItem(cloudKey) || '{}'); }
-  catch { localStorage.removeItem(cloudKey); }
+  let saved = cloudStore?.read({}) || {};
+  if (!cloudStore) {
+    try { saved = JSON.parse(localStorage.getItem(cloudKey) || '{}'); }
+    catch (error) { window.KlasRuntime?.reportError(error, 'cloudinary:read'); }
+  }
+  if (!saved || typeof saved !== 'object' || Array.isArray(saved)) saved = {};
   return { ...config.cloudinary, ...saved };
 }
 
@@ -162,7 +174,13 @@ export function saveCloudConfig(cloudName, uploadPreset){
   const preset = String(uploadPreset || '').trim();
   if (!/^[a-zA-Z0-9_-]+$/.test(name)) throw new Error('Cloud Name diňe harp, san, tire we aşaky çyzyk kabul edýär.');
   if (!/^[a-zA-Z0-9_-]+$/.test(preset)) throw new Error('Upload Preset formaty nädogry.');
-  localStorage.setItem(cloudKey, JSON.stringify({ cloudName: name, uploadPreset: preset }));
+  const value = { cloudName: name, uploadPreset: preset };
+  let saved = cloudStore?.write(value) ?? false;
+  if (!cloudStore) {
+    try { localStorage.setItem(cloudKey, JSON.stringify(value)); saved = true; }
+    catch (error) { window.KlasRuntime?.reportError(error, 'cloudinary:save'); }
+  }
+  if (!saved) throw new Error('Cloudinary sazlamasy brauzerde saklanmady. Site data rugsadyny barlaň.');
   updateCloudState();
 }
 

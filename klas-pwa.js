@@ -111,6 +111,7 @@
       }
     } catch (error) {
       console.error('Klas PWA service worker başartmady', error);
+      window.KlasRuntime?.reportError(error, 'pwa:service-worker');
       setStatus('Offline režim işjeňleşmedi.');
     }
   });

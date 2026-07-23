@@ -1,6 +1,6 @@
 'use strict';
 
-const CACHE_VERSION = 'klas-shell-v5.7.1';
+const CACHE_VERSION = 'klas-shell-v5.8.0';
 const APP_BASE = new URL('./', self.registration.scope);
 const appUrl = path => new URL(path, APP_BASE).href;
 const APP_SHELL = [
@@ -13,7 +13,9 @@ const APP_SHELL = [
   './klas-v4.css',
   './klas-backend.css',
   './klas-livechat.css',
+  './klas-design-system.css',
   './klas-config.js',
+  './klas-runtime.js',
   './klas-v4-1.js',
   './klas-v4-2.js',
   './klas-v4-3.js',

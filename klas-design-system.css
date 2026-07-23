@@ -1,0 +1,179 @@
+/* Klas 5.8 design-system layer: accessible tokens and resilient component polish. */
+:root {
+  --space-1: .25rem;
+  --space-2: .5rem;
+  --space-3: .75rem;
+  --space-4: 1rem;
+  --space-5: 1.25rem;
+  --space-6: 1.5rem;
+  --radius-sm: .75rem;
+  --radius-md: 1rem;
+  --radius-lg: 1.375rem;
+  --surface-raised: color-mix(in srgb, var(--card) 96%, var(--brand) 4%);
+  --focus-ring: #f59e0b;
+  --elevation-1: 0 1px 2px rgba(15, 23, 42, .04), 0 10px 30px rgba(15, 23, 42, .06);
+  --elevation-2: 0 20px 55px rgba(15, 23, 42, .14);
+}
+
+[hidden] {
+  display: none !important;
+}
+
+body {
+  background:
+    radial-gradient(circle at 12% -5%, color-mix(in srgb, var(--brand) 9%, transparent), transparent 26rem),
+    var(--bg);
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+}
+
+.card,
+.modal-card,
+.search-results {
+  box-shadow: var(--elevation-1);
+}
+
+.card {
+  background: var(--surface-raised);
+}
+
+.topbar {
+  box-shadow: 0 1px 0 color-mix(in srgb, var(--line) 80%, transparent);
+}
+
+.brand .logo {
+  isolation: isolate;
+  position: relative;
+}
+
+.brand .logo::after {
+  border: 1px solid rgba(255, 255, 255, .32);
+  border-radius: inherit;
+  content: '';
+  inset: 2px;
+  pointer-events: none;
+  position: absolute;
+}
+
+:where(.primary, .secondary, .danger, .mini, .auth-btn, .icon-btn, .profile-btn, .nav button) {
+  transition: background-color .18s ease, border-color .18s ease, box-shadow .18s ease, color .18s ease, transform .18s ease;
+}
+
+:where(.primary, .secondary, .danger, .mini, .auth-btn):active:not(:disabled) {
+  transform: translateY(1px);
+}
+
+.primary:hover:not(:disabled),
+.auth-btn:hover:not(:disabled) {
+  box-shadow: 0 8px 22px color-mix(in srgb, var(--brand) 28%, transparent);
+}
+
+:where(input, textarea, select) {
+  min-height: 44px;
+}
+
+:where(input, textarea, select):focus-visible {
+  border-color: var(--brand) !important;
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--brand) 16%, transparent);
+  outline: 0;
+}
+
+.app-error-banner {
+  align-items: center;
+  background: color-mix(in srgb, var(--danger) 9%, var(--card));
+  border: 1px solid color-mix(in srgb, var(--danger) 32%, var(--line));
+  border-radius: var(--radius-md);
+  color: var(--text);
+  display: flex;
+  gap: var(--space-3);
+  margin-bottom: var(--space-4);
+  padding: var(--space-3) var(--space-4);
+}
+
+.app-error-banner > span:first-child {
+  color: var(--danger);
+  font-size: 1.25rem;
+}
+
+.app-error-banner p {
+  flex: 1;
+  margin: 0;
+}
+
+.app-error-banner button {
+  background: transparent;
+  border: 0;
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  min-height: 44px;
+  min-width: 44px;
+}
+
+.runtime-row > div {
+  display: grid;
+  gap: var(--space-1);
+}
+
+.runtime-version {
+  color: var(--muted);
+  font-size: .75rem;
+  font-weight: 700;
+  letter-spacing: .02em;
+}
+
+#appRuntimeStatus[data-state='ready']::before,
+#appRuntimeStatus[data-state='degraded']::before {
+  border-radius: 50%;
+  content: '';
+  display: inline-block;
+  height: .5rem;
+  margin-right: .4rem;
+  width: .5rem;
+}
+
+#appRuntimeStatus[data-state='ready']::before {
+  background: var(--success);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--success) 14%, transparent);
+}
+
+#appRuntimeStatus[data-state='degraded']::before {
+  background: var(--danger);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--danger) 14%, transparent);
+}
+
+@media (max-width: 860px) {
+  .layout {
+    padding-top: var(--space-4);
+  }
+
+  .app-error-banner {
+    margin-inline: 0;
+  }
+}
+
+@media (max-width: 520px) {
+  .app-error-banner {
+    align-items: flex-start;
+    border-radius: var(--radius-sm);
+  }
+
+  .app-error-banner p {
+    font-size: .875rem;
+  }
+}
+
+@media (prefers-contrast: more) {
+  :root {
+    --line: color-mix(in srgb, currentColor 38%, transparent);
+  }
+
+  :where(.primary, .secondary, .danger, .mini, .auth-btn) {
+    border: 2px solid currentColor;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :where(.primary, .secondary, .danger, .mini, .auth-btn, .icon-btn, .profile-btn, .nav button) {
+    transition: none;
+  }
+}
