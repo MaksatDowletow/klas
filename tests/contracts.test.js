@@ -11,7 +11,9 @@ const read = file => fs.readFileSync(path.join(root, file), 'utf8');
 test('HTML loads the runtime before feature scripts and design system last', () => {
   const html = read('index.html');
   assert.ok(html.indexOf('klas-runtime.js') < html.indexOf('klas-v4-1.js'));
+  assert.ok(html.indexOf('klas-media-viewer.js') < html.indexOf('klas-v4-1.js'));
   assert.ok(html.indexOf('klas-design-system.css') > html.indexOf('klas-livechat.css'));
+  assert.ok(html.indexOf('klas-media-viewer.css') > html.indexOf('klas-design-system.css'));
   assert.match(html, /id="appErrorBanner"[^>]*role="alert"[^>]*hidden/);
   assert.match(html, /id="appRuntimeStatus"[^>]*role="status"/);
 });
@@ -48,4 +50,15 @@ test('service worker precaches the architecture runtime', () => {
   const worker = read('service-worker.js');
   assert.match(worker, /\.\/klas-runtime\.js/);
   assert.match(worker, /\.\/klas-design-system\.css/);
+  assert.match(worker, /\.\/klas-media-viewer\.js/);
+  assert.match(worker, /\.\/klas-media-viewer\.css/);
+});
+
+test('media grid and post media use the shared viewer', () => {
+  const media = read('klas-v4-3.js');
+  const posts = read('klas-v4-2.js');
+  assert.match(media, /KlasMediaViewer\?\.open/);
+  assert.match(media, /cloudinaryThumbnail/);
+  assert.match(posts, /data-post-media/);
+  assert.match(posts, /KlasMediaViewer\?\.open/);
 });

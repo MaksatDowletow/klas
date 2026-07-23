@@ -35,7 +35,9 @@ jobs:
             klas-backend.css
             klas-livechat.css
             klas-design-system.css
+            klas-media-viewer.css
             klas-runtime.js
+            klas-media-viewer.js
             klas-v4-1.js
             klas-v4-2.js
             klas-v4-3.js
@@ -66,6 +68,7 @@ jobs:
             health.json
             tests/runtime.test.js
             tests/contracts.test.js
+            tests/media-viewer.test.js
           )
           for file in "${required[@]}"; do
             test -s "$file" || { echo "Missing required runtime file: $file"; exit 1; }
@@ -93,9 +96,11 @@ jobs:
           grep -q '"scope": "/klas/"' manifest.webmanifest
           grep -q 'https://maksatdowletow.github.io/klas/' index.html
           ! grep -q 'github.io/Klas/' index.html
-          grep -q "version: '5.8.0'" klas-config.js
+          grep -q "version: '5.9.0'" klas-config.js
           grep -q 'klas-runtime.js' service-worker.js
           grep -q 'klas-design-system.css' service-worker.js
+          grep -q 'klas-media-viewer.js' service-worker.js
+          grep -q 'klas-media-viewer.css' service-worker.js
 
       - name: Build clean Pages artifact
         shell: bash
@@ -111,8 +116,10 @@ jobs:
             klas-backend.css
             klas-livechat.css
             klas-design-system.css
+            klas-media-viewer.css
             klas-config.js
             klas-runtime.js
+            klas-media-viewer.js
             klas-v4-1.js
             klas-v4-2.js
             klas-v4-3.js
@@ -147,13 +154,14 @@ jobs:
           cat > _site/release.json <<EOF
           {
             "app": "Klas",
-            "version": "5.8.0",
+            "version": "5.9.0",
             "commit": "${GITHUB_SHA}",
             "dynamicPages": true,
             "realtimeComments": true,
             "runtimeKernel": true,
             "versionedLocalStore": true,
             "clientErrorBoundary": true,
+            "mediaGalleryViewer": true,
             "pwa": true,
             "offlineShell": true
           }
