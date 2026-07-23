@@ -1,11 +1,9 @@
-import { runtime, bridge, $, safe, toast, login, logout, authErrorMessage, cloudConfig, cloudReady, saveCloudConfig, updateCloudState, uploadMedia, saveProfile, completeOnboarding, createPost, toggleLike, addComment, deletePost } from './klas-backend-core.js';
+import { runtime, bridge, $, safe, toast, login, logout, authErrorMessage, cloudReady, uploadMedia, saveProfile, completeOnboarding, createPost, toggleLike, addComment, deletePost } from './klas-backend-core.js';
 import { ensureConversation, sendMessage } from './klas-backend-chat.js';
 import { createGroup, toggleGroup, deleteGroup, createEvent, toggleEvent, deleteEvent, createMedia, deleteMedia, createStory, deleteStory } from './klas-backend-community.js';
 import { toggleFriendship, notifyPostAuthor, markRead, markAllRead } from './klas-backend-notifications.js';
 
 function modal(o){bridge.openModal(o)}
-function cloudSettings(){const c=cloudConfig();modal({title:'Cloudinary sazlamasy',confirmText:'Sakla',body:`<div class="backend-modal-status">Diňe Cloud Name we Unsigned Upload Preset gerek. API Secret açyk koda goýulmaýar.</div><div class="form-grid"><div class="field"><label>Cloud Name</label><input id="cloudNameInput" value="${safe(c.cloudName||'')}"></div><div class="field"><label>Unsigned Upload Preset</label><input id="cloudPresetInput" value="${safe(c.uploadPreset||'klas_unsigned')}"></div></div>`,onConfirm:()=>{const n=$('#cloudNameInput').value.trim(),p=$('#cloudPresetInput').value.trim();if(!n||!p)throw new Error('Iki meýdan hem hökmany.');saveCloudConfig(n,p);bridge.closeModal();toast('Cloudinary sazlandy')}})}
-
 function authIdentity(){
   const user=runtime.user;
   if(!user)return '';
@@ -126,7 +124,6 @@ $('#accountActionBtn')?.addEventListener('click',()=>{
   else if(action==='profile')profileEditor();
   else authDialog();
 });
-$('#configureCloudinaryBtn')?.addEventListener('click',cloudSettings);updateCloudState();
 updateAccountPanel();
 
 window.addEventListener('klas-auth',event=>{
@@ -139,7 +136,7 @@ window.addEventListener('klas-auth',event=>{
 });
 window.addEventListener('klas-account',updateAccountPanel);
 
-document.addEventListener('click',async e=>{const t=e.target;if(t.closest('#configureCloudinaryBtn')){e.preventDefault();e.stopImmediatePropagation();cloudSettings();return}if(!runtime.user)return;const c=t.closest('#composerOpen,[data-compose]');if(c){e.preventDefault();e.stopImmediatePropagation();composer(c.dataset.compose||'text');return}if(t.closest('#editProfileBtn')){e.preventDefault();e.stopImmediatePropagation();profileEditor();return}if(t.closest('[data-story-add]')){e.preventDefault();e.stopImmediatePropagation();storyEditor();return}if(t.closest('#createGroupBtn')){e.preventDefault();e.stopImmediatePropagation();groupEditor();return}if(t.closest('#createEventBtn')){e.preventDefault();e.stopImmediatePropagation();eventEditor();return}if(t.closest('#uploadMediaBtn')){e.preventDefault();e.stopImmediatePropagation();mediaEditor();return}
+document.addEventListener('click',async e=>{const t=e.target;if(!runtime.user)return;const c=t.closest('#composerOpen,[data-compose]');if(c){e.preventDefault();e.stopImmediatePropagation();composer(c.dataset.compose||'text');return}if(t.closest('#editProfileBtn')){e.preventDefault();e.stopImmediatePropagation();profileEditor();return}if(t.closest('[data-story-add]')){e.preventDefault();e.stopImmediatePropagation();storyEditor();return}if(t.closest('#createGroupBtn')){e.preventDefault();e.stopImmediatePropagation();groupEditor();return}if(t.closest('#createEventBtn')){e.preventDefault();e.stopImmediatePropagation();eventEditor();return}if(t.closest('#uploadMediaBtn')){e.preventDefault();e.stopImmediatePropagation();mediaEditor();return}
 const like=t.closest('[data-like]');if(like){const p=bridge.getPost(like.dataset.like);if(p?.remote){e.preventDefault();e.stopImmediatePropagation();try{const liked=await toggleLike(p.id);if(liked)await notifyPostAuthor(p.id,'like',`${runtime.profile?.shortName||'Bir ulanyjy'} postuňyzy halady`,'❤️')}catch(x){toast(x.message)}return}}
 const del=t.closest('[data-delete-post]');if(del){const p=bridge.getPost(del.dataset.deletePost);if(p?.remote){e.preventDefault();e.stopImmediatePropagation();if(confirm('Firebase posty aýyrmalymy?'))await deletePost(p.id);return}}
 const friend=t.closest('[data-friend],[data-suggest-friend]');if(friend){const id=friend.dataset.friend||friend.dataset.suggestFriend,p=bridge.getPerson(id);if(p?.remote){e.preventDefault();e.stopImmediatePropagation();try{const status=await toggleFriendship(p.uid||p.id);bridge.patchPerson(p.id,{status});toast(status==='friend'?'Dostluk kabul edildi':status==='pending'?'Dostluk haýyşy ugradyldy':'Dostluk aýryldy')}catch(x){toast(x.message)}return}}
@@ -156,4 +153,4 @@ const sd=t.closest('[data-delete-story]');if(sd){const v=bridge.getState().stori
 
 document.addEventListener('submit',async e=>{if(!runtime.user)return;const f=e.target;if(f.matches('[data-comment-form]')){const p=bridge.getPost(f.dataset.commentForm);if(p?.remote){e.preventDefault();e.stopImmediatePropagation();const i=f.querySelector('input'),text=i.value.trim();if(text){await addComment(p.id,text);await notifyPostAuthor(p.id,'comment',`${runtime.profile?.shortName||'Bir ulanyjy'} postuňyza teswir ýazdy`,'💬');i.value=''}return}}if(f.matches('#chatForm')){const c=bridge.getActiveChat();if(c?.remote){e.preventDefault();e.stopImmediatePropagation();const i=$('#chatInput'),text=i.value.trim();if(text){try{await sendMessage(c.id,text);i.value=''}catch(error){toast(error.message||'Habar ugradylmady')}}return}}},true);
 
-window.KlasBackend=Object.freeze({login,logout,uploadMedia,cloudReady,cloudSettings,createPost,saveProfile,ensureConversation,sendMessage,deleteMedia});
+window.KlasBackend=Object.freeze({login,logout,uploadMedia,cloudReady,createPost,saveProfile,ensureConversation,sendMessage,deleteMedia});

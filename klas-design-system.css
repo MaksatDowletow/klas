@@ -121,6 +121,20 @@ body {
   letter-spacing: .02em;
 }
 
+.service-state {
+  border-radius: 999px;
+  display: inline-flex;
+  flex: 0 0 auto;
+  font-size: .75rem;
+  font-weight: 800;
+  padding: .4rem .7rem;
+}
+
+.service-state.ready {
+  background: color-mix(in srgb, var(--success) 12%, var(--card));
+  color: var(--success);
+}
+
 #appRuntimeStatus[data-state='ready']::before,
 #appRuntimeStatus[data-state='degraded']::before {
   border-radius: 50%;
