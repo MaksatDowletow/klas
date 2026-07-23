@@ -8,6 +8,7 @@ import {
 } from '@firebase/rules-unit-testing';
 import {
   collection,
+  deleteDoc,
   doc,
   getDoc,
   getDocs,
@@ -337,4 +338,59 @@ test('direct chat can be discovered, created, messaged, and seen only by its mem
       lastMessageSenderId: ''
     }
   ));
+});
+
+test('presence sessions are realtime-readable to members and writable only by their owner', async () => {
+  const alice = 'presence-alice';
+  const bob = 'presence-bob';
+  const blocked = 'presence-blocked';
+  await seedMember(alice);
+  await seedMember(bob);
+  await seedMember(blocked, { status: 'blocked' });
+
+  const aliceDb = googleContext(alice).firestore();
+  const bobDb = googleContext(bob).firestore();
+  const blockedDb = googleContext(blocked).firestore();
+  const sessionId = 'alice-session-123456';
+  const sessionRef = doc(aliceDb, 'presenceSessions', sessionId);
+
+  await assertSucceeds(setDoc(sessionRef, {
+    uid: alice,
+    sessionId,
+    state: 'online',
+    updatedAt: serverTimestamp()
+  }));
+
+  const memberView = await assertSucceeds(getDocs(query(
+    collection(bobDb, 'presenceSessions'),
+    orderBy('updatedAt', 'desc')
+  )));
+  assert.equal(memberView.size, 1);
+  assert.equal(memberView.docs[0].data().uid, alice);
+
+  await assertSucceeds(setDoc(sessionRef, {
+    uid: alice,
+    sessionId,
+    state: 'offline',
+    updatedAt: serverTimestamp()
+  }));
+  const offlineView = await assertSucceeds(getDoc(doc(bobDb, 'presenceSessions', sessionId)));
+  assert.equal(offlineView.data().state, 'offline');
+  await assertFails(setDoc(doc(bobDb, 'presenceSessions', sessionId), {
+    uid: bob,
+    sessionId,
+    state: 'online',
+    updatedAt: serverTimestamp()
+  }));
+  await assertFails(setDoc(doc(aliceDb, 'presenceSessions', 'forged-session-123456'), {
+    uid: bob,
+    sessionId: 'forged-session-123456',
+    state: 'online',
+    updatedAt: serverTimestamp()
+  }));
+  await assertFails(getDocs(collection(blockedDb, 'presenceSessions')));
+
+  await assertSucceeds(deleteDoc(sessionRef));
+  const afterDelete = await assertSucceeds(getDocs(collection(bobDb, 'presenceSessions')));
+  assert.equal(afterDelete.size, 0);
 });

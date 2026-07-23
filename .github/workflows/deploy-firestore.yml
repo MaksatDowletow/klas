@@ -75,6 +75,9 @@ jobs:
           grep -q "get('status', 'pending') == 'pending'" firestore.rules
           grep -q 'allow get: if isActiveMember()' firestore.rules
           grep -q "conversationId == 'direct_'" firestore.rules
+          grep -q 'match /presenceSessions/{sessionId}' firestore.rules
+          grep -Fq "request.resource.data.state in ['online', 'offline']" firestore.rules
+          grep -q "request.resource.data.uid == request.auth.uid" firestore.rules
           grep -q "'uid', 'fullName', 'shortName', 'email', 'role', 'status', 'admin'" firestore.rules
 
       - name: Install pinned Firebase test tools

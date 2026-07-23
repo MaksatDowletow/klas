@@ -1,6 +1,6 @@
 {
   "name": "klas-community",
-  "version": "6.0.2",
+  "version": "6.1.0",
   "private": true,
   "scripts": {
     "test": "node --test tests/*.test.js",

@@ -231,6 +231,25 @@ service cloud.firestore {
       allow delete: if isAdmin();
     }
 
+    match /presenceSessions/{sessionId} {
+      allow read: if isActiveMember();
+      allow create: if isActiveMember()
+        && request.resource.data.keys().hasOnly(['uid', 'sessionId', 'state', 'updatedAt'])
+        && request.resource.data.uid == request.auth.uid
+        && request.resource.data.sessionId == sessionId
+        && request.resource.data.state == 'online'
+        && request.resource.data.updatedAt == request.time;
+      allow update: if isActiveMember()
+        && resource.data.uid == request.auth.uid
+        && request.resource.data.uid == resource.data.uid
+        && request.resource.data.sessionId == resource.data.sessionId
+        && request.resource.data.sessionId == sessionId
+        && request.resource.data.state in ['online', 'offline']
+        && request.resource.data.updatedAt == request.time
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['state', 'updatedAt']);
+      allow delete: if isActiveMember() && resource.data.uid == request.auth.uid;
+    }
+
     match /posts/{postId} {
       allow read: if isActiveMember();
       allow create: if isActiveMember()

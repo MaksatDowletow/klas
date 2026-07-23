@@ -46,6 +46,7 @@ jobs:
             klas-config.js
             klas-backend-bootstrap.js
             klas-auth-policy.js
+            klas-presence-policy.js
             klas-backend-core.js
             klas-backend-ui.js
             klas-backend-chat.js
@@ -71,6 +72,7 @@ jobs:
             tests/contracts.test.js
             tests/media-viewer.test.js
             tests/auth-policy.test.js
+            tests/presence-policy.test.js
           )
           for file in "${required[@]}"; do
             test -s "$file" || { echo "Missing required runtime file: $file"; exit 1; }
@@ -103,13 +105,20 @@ jobs:
           grep -Fq 'const id = `direct_' klas-backend-chat.js
           grep -Fq '[data-message-person],[data-online-chat],[data-search-person],[data-chat-choice]' klas-backend-ui.js
           grep -q 'allow get: if isActiveMember()' firestore.rules
+          grep -Fq "collection(db, 'presenceSessions')" klas-backend-core.js
+          grep -q 'presenceConfig.heartbeatMs' klas-backend-core.js
+          grep -q 'presenceConfig.staleMs' klas-backend-core.js
+          grep -q 'presencePolicy.aggregate' klas-backend-core.js
+          grep -q 'class="presence-badge"' klas-v4-2.js
+          grep -q 'match /presenceSessions/{sessionId}' firestore.rules
           grep -q '@media(max-width:760px)' klas-v4.css
           grep -q '"start_url": "/klas/' manifest.webmanifest
           grep -q '"scope": "/klas/"' manifest.webmanifest
           grep -q 'https://maksatdowletow.github.io/klas/' index.html
           ! grep -q 'github.io/Klas/' index.html
-          grep -q "version: '6.0.2'" klas-config.js
+          grep -q "version: '6.1.0'" klas-config.js
           grep -q 'klas-runtime.js' service-worker.js
+          grep -q 'klas-presence-policy.js' service-worker.js
           grep -q 'klas-design-system.css' service-worker.js
           grep -q 'klas-media-viewer.js' service-worker.js
           grep -q 'klas-media-viewer.css' service-worker.js
@@ -132,6 +141,7 @@ jobs:
             klas-config.js
             klas-runtime.js
             klas-auth-policy.js
+            klas-presence-policy.js
             klas-media-viewer.js
             klas-v4-1.js
             klas-v4-2.js
@@ -167,7 +177,7 @@ jobs:
           cat > _site/release.json <<EOF
           {
             "app": "Klas",
-            "version": "6.0.2",
+            "version": "6.1.0",
             "commit": "${GITHUB_SHA}",
             "dynamicPages": true,
             "realtimeComments": true,
@@ -179,6 +189,9 @@ jobs:
             "atomicOnboarding": true,
             "firestoreDirectChat": true,
             "unifiedChatEntrypoints": true,
+            "sessionScopedPresence": true,
+            "realtimeOnlineMembers": true,
+            "presenceHeartbeatExpiry": true,
             "mediaGalleryViewer": true,
             "centralizedCloudinaryConfig": true,
             "pwa": true,

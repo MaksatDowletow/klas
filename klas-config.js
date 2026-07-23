@@ -28,8 +28,14 @@ window.KLAS_CONFIG = Object.freeze({
     maxCallAgeMs: 60000,
     disconnectGraceMs: 12000
   }),
+  presence: Object.freeze({
+    heartbeatMs: 45000,
+    staleMs: 105000,
+    sweepMs: 15000,
+    maxSessions: 500
+  }),
   app: Object.freeze({
-    version: '6.0.2',
+    version: '6.1.0',
     firebaseSdkVersion: '12.16.0',
     allowLocalFallback: true,
     dynamicPages: true,

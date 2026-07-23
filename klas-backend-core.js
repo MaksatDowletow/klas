@@ -28,9 +28,11 @@ import {
 export const config = window.KLAS_CONFIG;
 export const bridge = window.KlasBridge;
 export const authPolicy = window.KlasAuthPolicy;
+export const presencePolicy = window.KlasPresencePolicy;
 if (!config?.firebase?.projectId) throw new Error('Firebase konfigurasiýasy tapylmady.');
 if (!bridge) throw new Error('Klas bridge moduly tapylmady.');
 if (!authPolicy) throw new Error('Klas auth policy moduly tapylmady.');
+if (!presencePolicy) throw new Error('Klas presence policy moduly tapylmady.');
 
 export const app = initializeApp(config.firebase);
 export const auth = getAuth(app);
@@ -44,7 +46,9 @@ export const runtime = {
   user: null,
   profile: null,
   account: null,
+  profileRecords: new Map(),
   profiles: new Map(),
+  presenceSessions: new Map(),
   posts: new Map(),
   subscriptions: [],
   authPersistence: 'checking'
@@ -57,10 +61,20 @@ export const safe = value => String(value ?? '').replace(/[&<>'"]/g, char => ({
 export const toast = text => bridge.toast(text);
 
 let presenceSequence = Promise.resolve();
+let presenceReference = null;
+let presenceHeartbeatTimer = null;
+let presenceSweepTimer = null;
+let presenceSignature = '';
 let authOperation = null;
 let authRevision = 0;
 let lastAuthFailure = null;
 const authBootstrap = authPolicy.createBootstrapRegistry();
+const presenceConfig = Object.freeze({
+  heartbeatMs: Math.max(15000, Number(config.presence?.heartbeatMs) || 45000),
+  staleMs: Math.max(45000, Number(config.presence?.staleMs) || 105000),
+  sweepMs: Math.max(5000, Number(config.presence?.sweepMs) || 15000),
+  maxSessions: Math.max(50, Number(config.presence?.maxSessions) || 500)
+});
 
 export function millis(value){
   return value?.toMillis?.() || value?.seconds * 1000 || Date.parse(value || '') || 0;
@@ -172,17 +186,50 @@ export async function login(){
   }
 }
 
+function presenceSessionId(uid){
+  const key = `klas-presence-session:${uid}`;
+  try {
+    const saved = sessionStorage.getItem(key);
+    if (saved && /^[a-zA-Z0-9-]{16,80}$/.test(saved)) return saved;
+    const created = globalThis.crypto?.randomUUID?.()
+      || `${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}-${Math.random().toString(36).slice(2)}`;
+    sessionStorage.setItem(key, created);
+    return created;
+  } catch {
+    return globalThis.crypto?.randomUUID?.()
+      || `${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}-${Math.random().toString(36).slice(2)}`;
+  }
+}
+
 async function setPresence(online){
   const user = auth.currentUser;
   if (!user) return;
+  if (!online) {
+    const reference = presenceReference;
+    presenceReference = null;
+    if (!reference) return;
+    presenceSequence = presenceSequence
+      .catch(() => {})
+      .then(() => setDoc(reference, {
+        uid: user.uid,
+        sessionId: reference.id,
+        state: 'offline',
+        updatedAt: serverTimestamp()
+      }));
+    await presenceSequence;
+    return;
+  }
+  const sessionId = presenceSessionId(user.uid);
+  const reference = doc(db, 'presenceSessions', sessionId);
+  presenceReference = reference;
   presenceSequence = presenceSequence
     .catch(() => {})
-    .then(() => setDoc(doc(db, 'profiles', user.uid), {
+    .then(() => setDoc(reference, {
       uid: user.uid,
-      online: Boolean(online),
-      lastSeen: serverTimestamp(),
+      sessionId,
+      state: 'online',
       updatedAt: serverTimestamp()
-    }, { merge: true }));
+    }));
   await presenceSequence;
 }
 
@@ -258,7 +305,7 @@ async function ensureProfile(user){
     profession: '',
     school: 'Öde Abdullaýew adyndaky mekdep',
     graduationYear: 2000,
-    online: true
+    online: false
   };
   base.fullName = base.fullName.slice(0, 100);
 
@@ -300,7 +347,7 @@ async function ensureProfile(user){
       role: deleteField(),
       status: deleteField(),
       admin: deleteField(),
-      online: true,
+      online: false,
       lastSeen: serverTimestamp(),
       updatedAt: serverTimestamp()
     }, { merge: true });
@@ -487,41 +534,107 @@ function subscribePosts(){
   ));
 }
 
+function publishProfilePresence(){
+  const presenceByUid = presencePolicy.aggregate(runtime.presenceSessions.values(), {
+    now: Date.now(),
+    staleMs: presenceConfig.staleMs
+  });
+
+  runtime.profiles = new Map([...runtime.profileRecords].map(([uid, profile]) => {
+    const presence = presenceByUid.get(uid);
+    return [uid, {
+      ...profile,
+      online: Boolean(presence?.online),
+      lastSeen: presence?.lastSeen || profile.lastSeen
+    }];
+  }));
+
+  const signature = JSON.stringify([...runtime.profiles]
+    .sort(([left], [right]) => left.localeCompare(right))
+    .map(([uid, profile]) => [
+      uid,
+      profile.online,
+      millis(profile.lastSeen),
+      profile.fullName,
+      profile.shortName,
+      profile.avatarURL,
+      profile.city,
+      profile.profession,
+      profile.bio
+    ]));
+  if (signature === presenceSignature) return;
+  presenceSignature = signature;
+
+  const own = runtime.profiles.get(runtime.user?.uid);
+  if (own) {
+    runtime.profile = {
+      ...own,
+      role: runtime.account?.role || 'user',
+      status: runtime.account?.status || 'active'
+    };
+    delete runtime.profile.email;
+    bridge.setCurrentUser(runtime.profile);
+  }
+  const existingStatuses = new Map(bridge.getState().people
+    .filter(person => person.remote)
+    .map(person => [person.uid || person.id, person.status || 'none']));
+  const people = [...runtime.profiles]
+    .filter(([uid]) => uid !== runtime.user?.uid)
+    .map(([uid, profile]) => ({
+      id: uid,
+      uid,
+      remote: true,
+      name: profile.fullName || 'Ulanyjy',
+      city: profile.city || 'Näbelli',
+      job: profile.profession || 'Klas agzasy',
+      avatar: profile.avatarURL || '',
+      status: existingStatuses.get(uid) || 'none',
+      online: Boolean(profile.online),
+      lastSeen: profile.lastSeen
+    }));
+  bridge.mergeRemotePeople(people);
+  window.dispatchEvent(new CustomEvent('klas-presence', {
+    detail: {
+      onlineUids: people.filter(person => person.online).map(person => person.uid),
+      updatedAt: Date.now()
+    }
+  }));
+}
+
 function subscribeProfiles(){
   runtime.subscriptions.push(onSnapshot(
     query(collection(db, 'profiles'), limit(150)),
     snapshot => {
-      runtime.profiles = new Map(snapshot.docs.map(item => [item.id, { id: item.id, ...item.data() }]));
-      const own = runtime.profiles.get(runtime.user?.uid);
-      if (own) {
-        runtime.profile = {
-          ...own,
-          role: runtime.account?.role || 'user',
-          status: runtime.account?.status || 'active'
-        };
-        delete runtime.profile.email;
-        bridge.setCurrentUser(runtime.profile);
-      }
-      const people = snapshot.docs
-        .filter(item => item.id !== runtime.user?.uid)
-        .map(item => {
-          const profile = item.data();
-          return {
-            id: item.id,
-            uid: item.id,
-            remote: true,
-            name: profile.fullName || 'Ulanyjy',
-            city: profile.city || 'Näbelli',
-            job: profile.profession || 'Klas agzasy',
-            avatar: profile.avatarURL || '',
-            status: 'none',
-            online: Boolean(profile.online)
-          };
-        });
-      bridge.mergeRemotePeople(people);
+      runtime.profileRecords = new Map(snapshot.docs.map(item => [item.id, {
+        id: item.id,
+        ...item.data()
+      }]));
+      publishProfilePresence();
     },
     error => handleError(error, 'Profiller ýüklenmedi')
   ));
+}
+
+function subscribePresence(){
+  runtime.subscriptions.push(onSnapshot(
+    query(
+      collection(db, 'presenceSessions'),
+      orderBy('updatedAt', 'desc'),
+      limit(presenceConfig.maxSessions)
+    ),
+    snapshot => {
+      runtime.presenceSessions = new Map(snapshot.docs.map(item => [item.id, {
+        id: item.id,
+        ...item.data({ serverTimestamps: 'estimate' })
+      }]));
+      publishProfilePresence();
+    },
+    error => handleError(error, 'Online ýagdaýlar ýüklenmedi')
+  ));
+  presenceHeartbeatTimer = window.setInterval(() => {
+    if (runtime.user && navigator.onLine) setPresence(true).catch(() => {});
+  }, presenceConfig.heartbeatMs);
+  presenceSweepTimer = window.setInterval(publishProfilePresence, presenceConfig.sweepMs);
 }
 
 function stop(){
@@ -529,8 +642,15 @@ function stop(){
     try { runtime.subscriptions.pop()(); }
     catch {}
   }
+  clearInterval(presenceHeartbeatTimer);
+  clearInterval(presenceSweepTimer);
+  presenceHeartbeatTimer = null;
+  presenceSweepTimer = null;
+  presenceSignature = '';
   runtime.posts.clear();
+  runtime.profileRecords.clear();
   runtime.profiles.clear();
+  runtime.presenceSessions.clear();
   bridge.mergeRemotePosts([]);
   bridge.mergeRemotePeople([]);
 }
@@ -539,6 +659,7 @@ async function startMemberData(){
   bridge.setCloudMode(true);
   stop();
   subscribeProfiles();
+  subscribePresence();
   subscribePosts();
   setStatus('Firebase birikdi', 'online');
   await setPresence(true).catch(() => {});
@@ -591,10 +712,13 @@ function signedOut(){
 }
 
 document.addEventListener('visibilitychange', () => {
-  if (runtime.user) setPresence(!document.hidden).catch(() => {});
+  if (runtime.user && !document.hidden && navigator.onLine) setPresence(true).catch(() => {});
 });
 window.addEventListener('pagehide', () => {
   if (runtime.user) setPresence(false).catch(() => {});
+});
+window.addEventListener('online', () => {
+  if (runtime.user) setPresence(true).catch(() => {});
 });
 
 try {

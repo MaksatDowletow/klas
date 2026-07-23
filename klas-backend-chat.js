@@ -343,5 +343,11 @@ document.addEventListener('click', event => {
   if (event.target.closest('[data-page="messages"]')) setTimeout(() => activateChat(), 0);
 });
 window.addEventListener('hashchange', () => setTimeout(() => activateChat(), 0));
+window.addEventListener('klas-presence', () => {
+  for (const id of conversationData.keys()) {
+    if (messageSnapshots.has(id)) rebuildChat(id);
+  }
+  updateChatChrome();
+});
 window.addEventListener('klas-auth', event => event.detail.user ? start() : stop());
 if (runtime.user) start();
