@@ -1,6 +1,6 @@
 'use strict';
 
-const CACHE_VERSION = 'klas-shell-v6.3.0';
+const CACHE_VERSION = 'klas-shell-v6.4.0';
 const APP_BASE = new URL('./', self.registration.scope);
 const appUrl = path => new URL(path, APP_BASE).href;
 const APP_SHELL = [
@@ -45,46 +45,62 @@ const APP_SHELL = [
   './assets/icons/klas-maskable-512.png'
 ].map(appUrl);
 
+async function precacheIndividually(){
+  const cache = await caches.open(CACHE_VERSION);
+  const results = await Promise.allSettled(APP_SHELL.map(async url => {
+    const response = await fetch(url, { cache: 'reload' });
+    if (!response.ok) throw new Error(`Precache ${response.status}: ${url}`);
+    await cache.put(url, response);
+  }));
+  const failed = results.filter(result => result.status === 'rejected');
+  if (failed.length) console.warn(`Klas PWA: ${failed.length} asset keşlenmedi`, failed);
+}
+
 self.addEventListener('install', event => {
-  event.waitUntil(caches.open(CACHE_VERSION).then(cache => cache.addAll(APP_SHELL)));
+  event.waitUntil(precacheIndividually());
 });
 
 self.addEventListener('activate', event => {
-  event.waitUntil(Promise.all([
-    caches.keys().then(keys => Promise.all(keys
+  event.waitUntil((async () => {
+    const keys = await caches.keys();
+    await Promise.all(keys
       .filter(key => key.startsWith('klas-shell-') && key !== CACHE_VERSION)
-      .map(key => caches.delete(key)))),
-    self.clients.claim()
-  ]));
+      .map(key => caches.delete(key)));
+    await self.clients.claim();
+  })());
 });
 
 self.addEventListener('message', event => {
   if (event.data?.type === 'SKIP_WAITING') self.skipWaiting();
+  if (event.data?.type === 'GET_VERSION') {
+    event.source?.postMessage({ type: 'VERSION', version: CACHE_VERSION });
+  }
 });
 
-async function networkFirstNavigation(request){
+async function networkFirst(request, fallbackUrl){
   const cache = await caches.open(CACHE_VERSION);
   try {
-    const response = await fetch(request);
-    if (response.ok) await cache.put(appUrl('./index.html'), response.clone());
+    const response = await fetch(request, { cache: 'no-store' });
+    if (response.ok && response.type === 'basic') await cache.put(request, response.clone());
     return response;
   } catch {
-    return (await cache.match(appUrl('./index.html')))
-      || (await cache.match(appUrl('./offline.html')))
+    return (await cache.match(request, { ignoreSearch: true }))
+      || (fallbackUrl ? await cache.match(fallbackUrl) : null)
       || Response.error();
   }
 }
 
-async function cacheFirstStatic(request){
+async function cacheFirst(request){
   const cache = await caches.open(CACHE_VERSION);
   const cached = await cache.match(request, { ignoreSearch: true });
   if (cached) return cached;
-  const response = await fetch(request);
-  if (response.ok && response.type === 'basic') {
-    const url = new URL(request.url);
-    await cache.put(`${url.origin}${url.pathname}`, response.clone());
+  try {
+    const response = await fetch(request);
+    if (response.ok && response.type === 'basic') await cache.put(request, response.clone());
+    return response;
+  } catch {
+    return Response.error();
   }
-  return response;
 }
 
 self.addEventListener('fetch', event => {
@@ -92,9 +108,12 @@ self.addEventListener('fetch', event => {
   if (request.method !== 'GET') return;
   const url = new URL(request.url);
   if (url.origin !== self.location.origin || !url.pathname.startsWith(APP_BASE.pathname)) return;
+
   if (request.mode === 'navigate') {
-    event.respondWith(networkFirstNavigation(request));
+    event.respondWith(networkFirst(request, appUrl('./offline.html')));
     return;
   }
-  event.respondWith(cacheFirstStatic(request));
+
+  const isCriticalAsset = /\.(?:js|css|json|webmanifest)$/i.test(url.pathname);
+  event.respondWith(isCriticalAsset ? networkFirst(request) : cacheFirst(request));
 });
