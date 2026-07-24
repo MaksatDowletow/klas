@@ -14,6 +14,7 @@ test('HTML loads the runtime before feature scripts and design system last', () 
   assert.ok(html.indexOf('klas-auth-policy.js') < html.indexOf('klas-backend-bootstrap.js'));
   assert.ok(html.indexOf('klas-presence-policy.js') < html.indexOf('klas-backend-bootstrap.js'));
   assert.ok(html.indexOf('klas-media-viewer.js') < html.indexOf('klas-v4-1.js'));
+  assert.ok(html.indexOf('klas-contact-sync.js') < html.indexOf('klas-v4-1.js'));
   assert.ok(html.indexOf('klas-design-system.css') > html.indexOf('klas-livechat.css'));
   assert.ok(html.indexOf('klas-media-viewer.css') > html.indexOf('klas-design-system.css'));
   assert.match(html, /id="appErrorBanner"[^>]*role="alert"[^>]*hidden/);
@@ -104,6 +105,23 @@ test('service worker precaches the architecture runtime', () => {
   assert.match(worker, /\.\/klas-design-system\.css/);
   assert.match(worker, /\.\/klas-media-viewer\.js/);
   assert.match(worker, /\.\/klas-media-viewer\.css/);
+  assert.match(worker, /\.\/klas-contact-sync\.js/);
+});
+
+test('contact sync stays device-local and has a VCF fallback', () => {
+  const html = read('index.html');
+  const module = read('klas-contact-sync.js');
+  const ui = read('klas-v4-3.js');
+  const rules = read('firestore.rules');
+  assert.match(html, /id="contactPickerBtn"/);
+  assert.match(html, /id="contactVcfInput"[^>]*accept="\.vcf,text\/vcard,text\/x-vcard"/);
+  assert.match(module, /contacts\.select\(properties, \{ multiple: true \}\)/);
+  assert.match(module, /function parseVCard/);
+  assert.match(module, /function matchContacts/);
+  assert.match(module, /SUMMARY_KEY = 'klas-contact-sync-summary'/);
+  assert.match(ui, /maglumatlary Klas-a ýüklenmeýär/);
+  assert.doesNotMatch(ui, /setDoc\(.*contact|addDoc\(.*contact|fetch\(.*contact/i);
+  assert.doesNotMatch(rules, /match \/contacts\//);
 });
 
 test('media grid and post media use the shared viewer', () => {

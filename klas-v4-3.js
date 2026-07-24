@@ -53,6 +53,161 @@ function renderNextEvent(){const future=[...state.events].filter(e=>new Date(`${
 function renderNotifications(){const unread=state.notifications.filter(n=>!n.read).length;$('#noticeBadge').textContent=unread;$('#noticeBadge').classList.toggle('hidden',!unread);$('#notifications').innerHTML=state.notifications.map(n=>`<button class="notice ${n.read?'':'unread'}" data-notice="${esc(n.id)}"><span>${esc(n.icon)}</span><span><b>${esc(n.text)}</b><small>${esc(n.time)}</small></span></button>`).join('')||'<div class="empty">Bildiriş ýok.</div>';$$('[data-notice]').forEach(b=>b.onclick=()=>{const n=state.notifications.find(x=>x.id===b.dataset.notice);n.read=true;save();renderNotifications();if(n.page)showPage(n.page)});}
 
 function renderProfile(){const u=state.currentUser;$('#profileAvatar').src=u.avatar;$('#profileName').textContent=u.name;$('#profileBio').textContent=u.bio;$('#profileMeta').textContent=`${u.city} · ${u.role}`;$('#notifySwitch').classList.toggle('on',state.notify);$('#notifySwitch').setAttribute('aria-checked',String(state.notify));state.privacy='school';$('#privacy').value='school';}
+let contactSyncSessionContacts=[];
+let contactSyncSource='device';
+let contactSyncInviteTargets=[];
+
+function contactSyncStorage(){
+  try{return window.localStorage}catch{return null}
+}
+
+function contactSyncCloudMode(){
+  return Boolean(window.KlasBridge?.isCloudMode?.());
+}
+
+function contactSyncMembers(){
+  return contactSyncCloudMode()?state.people.filter(person=>person.remote):[];
+}
+
+function currentContactSyncResult(){
+  return window.KlasContactSync?.matchContacts(contactSyncSessionContacts,contactSyncMembers())||{selected:[],matches:[],unmatched:[],ambiguous:[]};
+}
+
+function contactSyncDate(value){
+  const date=new Date(value);
+  if(Number.isNaN(date.getTime()))return'';
+  return new Intl.DateTimeFormat('tk-TM',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'}).format(date);
+}
+
+function renderContactSyncStatus(){
+  const api=window.KlasContactSync,status=$('#contactSyncStatus'),picker=$('#contactPickerBtn'),results=$('#contactSyncResultsBtn'),vcf=$('#contactVcfLabel');
+  if(!api||!status)return;
+  const pickerReady=api.pickerSupported(navigator);
+  picker.hidden=!pickerReady;
+  vcf?.classList.toggle('primary',!pickerReady);
+  vcf?.classList.toggle('secondary',pickerReady);
+  results.hidden=!contactSyncSessionContacts.length;
+  if(contactSyncSessionContacts.length){
+    const result=currentContactSyncResult(),summary=api.createSummary(result,contactSyncSource);
+    api.writeSummary(contactSyncStorage(),summary);
+    status.textContent=contactSyncCloudMode()
+      ?`${summary.selectedCount} kontakt barlandy · ${summary.matchedCount} Klas agzasy tapyldy · maglumatlar serwere ugradylmady.`
+      :`${summary.selectedCount} kontakt saýlandy · agzalar bilen deňeşdirmek üçin Google giriş ediň. Maglumatlar serwere ugradylmady.`;
+    return;
+  }
+  const summary=api.readSummary(contactSyncStorage());
+  if(summary){
+    status.textContent=`Soňky barlag: ${summary.selectedCount} kontakt · ${summary.matchedCount} gabat gelme · ${contactSyncDate(summary.syncedAt)}. Telefon we e-poçta saklanmady.`;
+    return;
+  }
+  status.textContent=pickerReady
+    ?'Kontaktlar diňe şu enjamda deňeşdirilýär; telefon we e-poçta maglumatlary Klas-a ýüklenmeýär.'
+    :'Bu brauzerde ulgam kontakt saýlaýjysy ýok. VCF saýlaň; maglumatlar diňe şu enjamda deňeşdiriler.';
+}
+
+function contactDisplayName(contact){
+  return contact.name||'Atsyz kontakt';
+}
+
+function contactInviteItem(contact,ambiguous=false){
+  const index=contactSyncInviteTargets.push(contact)-1;
+  const channel=window.KlasContactSync.preferredInviteChannel(contact);
+  const action=channel.type==='sms'?'SMS bilen çagyr':channel.type==='email'?'E-poçta bilen çagyr':'Çakylygy paýlaş';
+  return`<div class="contact-result-item"><span class="contact-result-icon" aria-hidden="true">${ambiguous?'◫':'+'}</span><span><b>${esc(contactDisplayName(contact))}</b><small>${ambiguous?'Birnäçe birmeňzeş atly Klas profili bar':'Klas agzalarynyň arasynda tapylmady'}</small></span><button type="button" class="mini" data-contact-invite="${index}">${action}</button></div>`;
+}
+
+function openContactSyncResults(){
+  const api=window.KlasContactSync;
+  if(!api||!contactSyncSessionContacts.length){toast('Ilki kontaktlary saýlaň.');return}
+  const cloud=contactSyncCloudMode(),result=currentContactSyncResult();
+  contactSyncInviteTargets=[];
+  const matches=result.matches.map(({contact,person})=>`<button type="button" class="contact-result-item contact-match" data-chat-choice="${esc(person.id)}"><span class="presence-avatar"><img class="avatar" src="${esc(person.avatar||avatarUrl(1))}" alt="">${person.online?'<i aria-hidden="true"></i>':''}</span><span><b>${esc(person.name)}</b><small>${esc(contactDisplayName(contact))} kontakty bilen doly ady gabat geldi${person.online?' · Onlaýn':''}</small></span><span class="contact-result-action">Çat aç →</span></button>`).join('');
+  const unmatched=result.unmatched.slice(0,100).map(contact=>contactInviteItem(contact)).join('');
+  const ambiguous=result.ambiguous.slice(0,100).map(contact=>contactInviteItem(contact,true)).join('');
+  const hiddenCount=Math.max(0,result.unmatched.length+result.ambiguous.length-200);
+  const comparison=cloud
+    ?`${matches?`<section class="contact-result-section"><div class="contact-section-title"><b>Klas-da tapylanlar</b><span>${result.matches.length}</span></div><p class="contact-section-help">Diňe doly adyň takyk gabat gelmegine görä görkezilýär.</p><div class="contact-result-list">${matches}</div></section>`:'<div class="empty contact-empty">Saýlanan kontaktlaryň arasynda ady takyk gabat gelýän Klas agzasy tapylmady.</div>'}
+       ${(unmatched||ambiguous)?`<section class="contact-result-section"><div class="contact-section-title"><b>Çagyrmak üçin</b><span>${result.unmatched.length+result.ambiguous.length}</span></div><div class="contact-result-list">${ambiguous}${unmatched}</div>${hiddenCount?`<small class="contact-overflow-note">Ýene ${hiddenCount} kontakt görkezilmedi.</small>`:''}</section>`:''}`
+    :`<div class="contact-login-note"><b>Agza barlagy üçin Google giriş gerek</b><span>Kontaktlar saýlandy. Giriş edeniňizden soň şu sessiýada Klas profilleri bilen ýerli deňeşdiriler.</span></div><section class="contact-result-section"><div class="contact-section-title"><b>Saýlanan kontaktlar</b><span>${result.selected.length}</span></div><div class="contact-result-list">${result.selected.slice(0,100).map(contact=>contactInviteItem(contact)).join('')}</div></section>`;
+  openModal({
+    title:'Kontakt sinhronizasiýasy',
+    hideConfirm:true,
+    cancelText:'Ýap',
+    body:`<div class="contact-privacy-note"><span aria-hidden="true">🔒</span><div><b>Enjamyňyzda işlenýär</b><small>Telefon belgileri we e-poçta salgylary Firestore-a, Cloudinary-a ýa-da başga serwere ugradylmaýar we brauzerde saklanmaýar.</small></div></div><div class="contact-stats" aria-label="Sinhronizasiýa netijeleri"><div><strong>${result.selected.length}</strong><span>Saýlandy</span></div><div><strong>${cloud?result.matches.length:'—'}</strong><span>Klas-da tapyldy</span></div><div><strong>${cloud?result.unmatched.length+result.ambiguous.length:'—'}</strong><span>Çagyrmak üçin</span></div></div>${comparison}<div class="contact-result-controls"><button type="button" class="secondary" data-contact-share>Umumy çakylygy paýlaş</button><button type="button" class="secondary contact-forget" data-contact-forget>Kontaktlary ýatdan aýyr</button></div>`
+  });
+  $$('[data-contact-invite]',$('#modalBody')).forEach(button=>button.onclick=()=>sendContactInvite(contactSyncInviteTargets[Number(button.dataset.contactInvite)]));
+  $('[data-contact-share]',$('#modalBody')).onclick=()=>shareKlasInvite();
+  $('[data-contact-forget]',$('#modalBody')).onclick=clearContactSync;
+}
+
+function klasInviteDetails(){
+  const url=`${location.origin}${location.pathname}`;
+  return{url,title:'Klas — mekdep jemgyýeti',text:`Klas jemgyýetimize goşulyň: ${url}`};
+}
+
+async function shareKlasInvite(){
+  const invite=klasInviteDetails();
+  try{
+    if(typeof navigator.share==='function'){await navigator.share(invite);return}
+    await navigator.clipboard.writeText(invite.text);
+    toast('Çakylyk baglanyşygy nusgalandy');
+  }catch(error){
+    if(error?.name!=='AbortError')prompt('Çakylyk baglanyşygy:',invite.text);
+  }
+}
+
+async function sendContactInvite(contact){
+  const channel=window.KlasContactSync.preferredInviteChannel(contact),invite=klasInviteDetails();
+  if(channel.type==='sms'){
+    location.href=`sms:${encodeURIComponent(channel.target)}?body=${encodeURIComponent(invite.text)}`;
+    return;
+  }
+  if(channel.type==='email'){
+    location.href=`mailto:${encodeURIComponent(channel.target)}?subject=${encodeURIComponent(invite.title)}&body=${encodeURIComponent(invite.text)}`;
+    return;
+  }
+  await shareKlasInvite();
+}
+
+function finishContactSync(contacts,source){
+  if(!contacts?.length){toast('Kontakt saýlanmady.');return}
+  contactSyncSessionContacts=window.KlasContactSync.sanitizeContacts(contacts);
+  contactSyncSource=source==='vcard'?'vcard':'device';
+  const result=currentContactSyncResult(),summary=window.KlasContactSync.createSummary(result,contactSyncSource);
+  window.KlasContactSync.writeSummary(contactSyncStorage(),summary);
+  renderContactSyncStatus();
+  openContactSyncResults();
+}
+
+async function selectDeviceContacts(){
+  try{
+    const contacts=await window.KlasContactSync.pickContacts(navigator);
+    finishContactSync(contacts,'device');
+  }catch(error){
+    if(error?.name!=='AbortError')toast(error?.message||'Kontaktlar saýlanmady.');
+  }
+}
+
+async function importContactVcf(file){
+  if(!file)return;
+  try{
+    if(file.size>window.KlasContactSync.MAX_VCARD_BYTES)throw new Error('VCF faýly 5 MB-dan uly bolmaly däl.');
+    finishContactSync(window.KlasContactSync.parseVCard(await file.text()),'vcard');
+  }catch(error){
+    toast(error?.message||'VCF faýly okalmady.');
+  }finally{
+    $('#contactVcfInput').value='';
+  }
+}
+
+function clearContactSync(){
+  contactSyncSessionContacts=[];
+  contactSyncInviteTargets=[];
+  window.KlasContactSync?.removeSummary(contactSyncStorage());
+  closeModal();
+  renderContactSyncStatus();
+  toast('Kontakt maglumatlary ýatdan aýryldy');
+}
 function openProfileEditor(){const u=state.currentUser;openModal({title:'Profili üýtget',confirmText:'Sakla',body:`<div class="form-grid"><div class="field"><label>Doly ady</label><input id="profileNameInput" value="${esc(u.name)}" maxlength="100"></div><div class="field"><label>Gysga ady</label><input id="profileShortInput" value="${esc(u.shortName||'')}" maxlength="30"></div><div class="form-grid two"><div class="field"><label>Şäher</label><input id="profileCityInput" value="${esc(u.city)}" maxlength="80"></div><div class="field"><label>Rol / iş</label><input id="profileRoleInput" value="${esc(u.role)}" maxlength="80"></div></div><div class="field"><label>Bio</label><textarea id="profileBioInput" maxlength="500">${esc(u.bio)}</textarea></div><div class="field"><label>Avatar URL-si</label><input id="profileAvatarInput" value="${esc(u.avatar)}" type="url"></div><div class="field"><label>Ýa-da avatar faýly</label><input id="profileAvatarFile" type="file" accept="image/*"><div class="field-help">Iň köp 1.5 MB.</div></div></div>`,onConfirm:async()=>{const name=$('#profileNameInput').value.trim();if(!name)throw new Error('Adyňyzy ýazyň.');const file=$('#profileAvatarFile').files[0];const avatar=file?await fileToDataUrl(file):normalizeLocalUrl($('#profileAvatarInput').value.trim()||u.avatar,{allowDataImage:true});state.currentUser={...u,name,shortName:$('#profileShortInput').value.trim()||name.split(' ')[0],city:$('#profileCityInput').value.trim(),role:$('#profileRoleInput').value.trim(),bio:$('#profileBioInput').value.trim(),avatar};state.posts.forEach(p=>{if(p.ownerId==='me'){p.author=name;p.role=state.currentUser.role;p.avatar=avatar}});save();updateUserUI();renderProfile();renderAllPosts();renderStories();closeModal();toast('Profil saklandy')}});}
 function exportData(){const blob=new Blob([JSON.stringify(state,null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`klas-backup-${new Date().toISOString().slice(0,10)}.json`;a.click();URL.revokeObjectURL(a.href);toast('Ätiýaç nusga taýýarlandy');}
 async function importData(file){if(!file)return;try{const data=JSON.parse(await file.text());state=normalizeState(data);save();renderEverything();toast('Maglumatlar üstünlikli dikeldildi')}catch{toast('JSON faýly nädogry ýa-da zaýalanan')}}

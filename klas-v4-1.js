@@ -177,7 +177,7 @@ function renderPage(name = activePageName()){
     events: ['renderEvents','renderNextEvent'],
     saved: ['renderSaved'],
     notifications: ['renderNotifications'],
-    settings: ['renderProfile']
+    settings: ['renderProfile','renderContactSyncStatus']
   };
   (renderers[page] || []).forEach(call);
   ['updateBadges','renderSuggestions','renderOnline','renderNextEvent'].forEach(call);
