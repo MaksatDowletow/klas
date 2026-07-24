@@ -8,7 +8,9 @@
   const statusNode = document.getElementById('pwaInstallStatus');
   let deferredPrompt = null;
   let waitingWorker = null;
+  let registration = null;
   let refreshing = false;
+  let updateTimer = 0;
 
   const isStandalone = () => matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
   const setStatus = text => { if (statusNode) statusNode.textContent = text; };
@@ -16,6 +18,7 @@
     installButtons.forEach(button => {
       button.hidden = !visible;
       button.dataset.pwaAction = mode;
+      button.disabled = false;
       if (button.id === 'pwaInstallBtn') button.textContent = label;
       else button.setAttribute('aria-label', mode === 'update' ? 'Klas-y täzele' : 'Klas-y programma hökmünde gur');
     });
@@ -30,16 +33,27 @@
   };
 
   function showUpdate(worker){
+    if (!worker) return;
     waitingWorker = worker;
     deferredPrompt = null;
-    setStatus('Täze Klas wersiýasy taýýar. Açyk jaňyňyz ýok wagty täzelemeli.');
+    setStatus('Täze Klas wersiýasy taýýar. Täzelemek üçin düwmä basyň.');
     setButtons({ visible: true, label: 'Täzele', mode: 'update' });
+  }
+
+  async function checkForUpdate(){
+    if (!registration || !navigator.onLine) return;
+    try {
+      await registration.update();
+      if (registration.waiting) showUpdate(registration.waiting);
+    } catch (error) {
+      console.warn('Klas PWA täzeleniş barlagy başartmady', error);
+    }
   }
 
   async function handleAction(){
     if (waitingWorker) {
       setStatus('Klas täzelenýär…');
-      setButtons({ visible: false });
+      installButtons.forEach(button => { button.disabled = true; });
       waitingWorker.postMessage({ type: 'SKIP_WAITING' });
       return;
     }
@@ -59,7 +73,7 @@
 
   window.addEventListener('beforeinstallprompt', event => {
     event.preventDefault();
-    if (isStandalone()) return;
+    if (isStandalone() || waitingWorker) return;
     deferredPrompt = event;
     setStatus('Windows ýa-da Android üçin Klas programmasy taýýar.');
     setButtons({ visible: true, label: 'Gur', mode: 'install' });
@@ -72,8 +86,15 @@
     toast('Klas üstünlikli guruldy');
   });
 
-  window.addEventListener('online', () => setStatus(isStandalone() ? 'Programma görnüşinde açyk · online' : 'Offline režim taýýar · online'));
+  window.addEventListener('online', () => {
+    setStatus(isStandalone() ? 'Programma görnüşinde açyk · online' : 'Offline režim taýýar · online');
+    checkForUpdate();
+  });
   window.addEventListener('offline', () => setStatus('Offline režim · käbir Firebase maglumatlary elýetersiz'));
+  window.addEventListener('focus', checkForUpdate);
+  document.addEventListener('visibilitychange', () => {
+    if (!document.hidden) checkForUpdate();
+  });
 
   if (isStandalone()) {
     setStatus('Programma görnüşinde açyk');
@@ -95,7 +116,7 @@
 
   window.addEventListener('load', async () => {
     try {
-      const registration = await navigator.serviceWorker.register('./service-worker.js', {
+      registration = await navigator.serviceWorker.register('./service-worker.js', {
         scope: './',
         updateViaCache: 'none'
       });
@@ -106,6 +127,9 @@
           if (worker.state === 'installed' && navigator.serviceWorker.controller) showUpdate(worker);
         });
       });
+      await checkForUpdate();
+      clearInterval(updateTimer);
+      updateTimer = window.setInterval(checkForUpdate, 30 * 60 * 1000);
       if (!waitingWorker && !deferredPrompt) {
         setStatus(isStandalone() ? 'Programma görnüşinde açyk' : 'Offline režim taýýar');
       }
