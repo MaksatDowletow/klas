@@ -1,48 +1,16 @@
 'use strict';
 
-const CACHE_VERSION = 'klas-shell-v6.4.0';
+const CACHE_VERSION = 'klas-shell-v6.4.1';
 const APP_BASE = new URL('./', self.registration.scope);
 const appUrl = path => new URL(path, APP_BASE).href;
 const APP_SHELL = [
-  './',
-  './index.html',
-  './offline.html',
-  './privacy.html',
-  './manifest.webmanifest',
-  './health.json',
-  './klas-v4.css',
-  './klas-backend.css',
-  './klas-livechat.css',
-  './klas-design-system.css',
-  './klas-media-viewer.css',
-  './klas-config.js',
-  './klas-runtime.js',
-  './klas-auth-policy.js',
-  './klas-presence-policy.js',
-  './klas-media-viewer.js',
-  './klas-contact-sync.js',
-  './klas-v4-1.js',
-  './klas-v4-2.js',
-  './klas-v4-3.js',
-  './klas-v4-4.js',
-  './klas-bridge.js',
-  './klas-pwa.js',
-  './klas-backend-bootstrap.js',
-  './klas-backend-core.js',
-  './klas-backend-ui.js',
-  './klas-backend-chat.js',
-  './klas-backend-community.js',
-  './klas-backend-notifications.js',
-  './klas-backend-video.js',
-  './klas-backend-realtime.js',
-  './klas-backend-school-relations.js',
-  './assets/icons/klas-icon.svg',
-  './assets/icons/klas-maskable.svg',
-  './assets/icons/klas-180.png',
-  './assets/icons/klas-192.png',
-  './assets/icons/klas-512.png',
-  './assets/icons/klas-maskable-192.png',
-  './assets/icons/klas-maskable-512.png'
+  './','./index.html','./offline.html','./privacy.html','./manifest.webmanifest','./health.json',
+  './klas-v4.css','./klas-backend.css','./klas-livechat.css','./klas-design-system.css','./klas-media-viewer.css',
+  './klas-config.js','./klas-runtime.js','./klas-auth-policy.js','./klas-presence-policy.js','./klas-media-viewer.js','./klas-contact-sync.js',
+  './klas-v4-1.js','./klas-v4-2.js','./klas-v4-3.js','./klas-v4-4.js','./klas-bridge.js','./klas-pwa.js',
+  './klas-backend-bootstrap.js','./klas-backend-core.js','./klas-backend-ui.js','./klas-backend-chat.js','./klas-backend-community.js',
+  './klas-backend-notifications.js','./klas-backend-video.js','./klas-backend-realtime.js','./klas-backend-school-relations.js','./klas-school-groups-policy.mjs',
+  './assets/icons/klas-icon.svg','./assets/icons/klas-maskable.svg','./assets/icons/klas-180.png','./assets/icons/klas-192.png','./assets/icons/klas-512.png','./assets/icons/klas-maskable-192.png','./assets/icons/klas-maskable-512.png'
 ].map(appUrl);
 
 async function precacheIndividually(){
@@ -56,25 +24,15 @@ async function precacheIndividually(){
   if (failed.length) console.warn(`Klas PWA: ${failed.length} asset keşlenmedi`, failed);
 }
 
-self.addEventListener('install', event => {
-  event.waitUntil(precacheIndividually());
-});
-
-self.addEventListener('activate', event => {
-  event.waitUntil((async () => {
-    const keys = await caches.keys();
-    await Promise.all(keys
-      .filter(key => key.startsWith('klas-shell-') && key !== CACHE_VERSION)
-      .map(key => caches.delete(key)));
-    await self.clients.claim();
-  })());
-});
-
+self.addEventListener('install', event => event.waitUntil(precacheIndividually()));
+self.addEventListener('activate', event => event.waitUntil((async () => {
+  const keys = await caches.keys();
+  await Promise.all(keys.filter(key => key.startsWith('klas-shell-') && key !== CACHE_VERSION).map(key => caches.delete(key)));
+  await self.clients.claim();
+})()));
 self.addEventListener('message', event => {
   if (event.data?.type === 'SKIP_WAITING') self.skipWaiting();
-  if (event.data?.type === 'GET_VERSION') {
-    event.source?.postMessage({ type: 'VERSION', version: CACHE_VERSION });
-  }
+  if (event.data?.type === 'GET_VERSION') event.source?.postMessage({ type: 'VERSION', version: CACHE_VERSION });
 });
 
 async function networkFirst(request, fallbackUrl){
@@ -84,9 +42,7 @@ async function networkFirst(request, fallbackUrl){
     if (response.ok && response.type === 'basic') await cache.put(request, response.clone());
     return response;
   } catch {
-    return (await cache.match(request, { ignoreSearch: true }))
-      || (fallbackUrl ? await cache.match(fallbackUrl) : null)
-      || Response.error();
+    return (await cache.match(request, { ignoreSearch: true })) || (fallbackUrl ? await cache.match(fallbackUrl) : null) || Response.error();
   }
 }
 
@@ -98,9 +54,7 @@ async function cacheFirst(request){
     const response = await fetch(request);
     if (response.ok && response.type === 'basic') await cache.put(request, response.clone());
     return response;
-  } catch {
-    return Response.error();
-  }
+  } catch { return Response.error(); }
 }
 
 self.addEventListener('fetch', event => {
@@ -108,12 +62,10 @@ self.addEventListener('fetch', event => {
   if (request.method !== 'GET') return;
   const url = new URL(request.url);
   if (url.origin !== self.location.origin || !url.pathname.startsWith(APP_BASE.pathname)) return;
-
   if (request.mode === 'navigate') {
     event.respondWith(networkFirst(request, appUrl('./offline.html')));
     return;
   }
-
-  const isCriticalAsset = /\.(?:js|css|json|webmanifest)$/i.test(url.pathname);
+  const isCriticalAsset = /\.(?:js|mjs|css|json|webmanifest)$/i.test(url.pathname);
   event.respondWith(isCriticalAsset ? networkFirst(request) : cacheFirst(request));
 });
