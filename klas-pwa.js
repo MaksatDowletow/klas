@@ -7,14 +7,16 @@
   ].filter(Boolean);
   const statusNode = document.getElementById('pwaInstallStatus');
   let deferredPrompt = null;
-  let waitingWorker = null;
+  let registration = null;
   let refreshing = false;
+  let updateTimer = 0;
 
   const isStandalone = () => matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
   const setStatus = text => { if (statusNode) statusNode.textContent = text; };
   const setButtons = ({ visible, label = 'Gur', mode = 'install' }) => {
     installButtons.forEach(button => {
       button.hidden = !visible;
+      button.disabled = false;
       button.dataset.pwaAction = mode;
       if (button.id === 'pwaInstallBtn') button.textContent = label;
       else button.setAttribute('aria-label', mode === 'update' ? 'Klas-y täzele' : 'Klas-y programma hökmünde gur');
@@ -29,20 +31,25 @@
     window.__pwaToastTimer = setTimeout(() => node.classList.remove('show'), 2600);
   };
 
-  function showUpdate(worker){
-    waitingWorker = worker;
+  function activateUpdate(worker){
+    if (!worker) return;
     deferredPrompt = null;
-    setStatus('Täze Klas wersiýasy taýýar. Açyk jaňyňyz ýok wagty täzelemeli.');
-    setButtons({ visible: true, label: 'Täzele', mode: 'update' });
+    setButtons({ visible: false });
+    setStatus('Täze wersiýa tapyldy · awtomatik täzelenýär…');
+    worker.postMessage({ type: 'SKIP_WAITING' });
+  }
+
+  async function checkForUpdate(){
+    if (!registration || !navigator.onLine) return;
+    try {
+      await registration.update();
+      if (registration.waiting) activateUpdate(registration.waiting);
+    } catch (error) {
+      console.warn('Klas PWA täzeleniş barlagy başartmady', error);
+    }
   }
 
   async function handleAction(){
-    if (waitingWorker) {
-      setStatus('Klas täzelenýär…');
-      setButtons({ visible: false });
-      waitingWorker.postMessage({ type: 'SKIP_WAITING' });
-      return;
-    }
     if (!deferredPrompt) return;
     await deferredPrompt.prompt();
     const choice = await deferredPrompt.userChoice;
@@ -72,8 +79,15 @@
     toast('Klas üstünlikli guruldy');
   });
 
-  window.addEventListener('online', () => setStatus(isStandalone() ? 'Programma görnüşinde açyk · online' : 'Offline režim taýýar · online'));
+  window.addEventListener('online', () => {
+    setStatus(isStandalone() ? 'Programma görnüşinde açyk · online' : 'Offline režim taýýar · online');
+    checkForUpdate();
+  });
   window.addEventListener('offline', () => setStatus('Offline režim · käbir Firebase maglumatlary elýetersiz'));
+  window.addEventListener('focus', checkForUpdate);
+  document.addEventListener('visibilitychange', () => {
+    if (!document.hidden) checkForUpdate();
+  });
 
   if (isStandalone()) {
     setStatus('Programma görnüşinde açyk');
@@ -90,23 +104,30 @@
   navigator.serviceWorker.addEventListener('controllerchange', () => {
     if (refreshing) return;
     refreshing = true;
+    setStatus('Täzeleniş tamamlandy · sahypa täzeden açylýar…');
     location.reload();
   });
 
   window.addEventListener('load', async () => {
     try {
-      const registration = await navigator.serviceWorker.register('./service-worker.js', {
+      registration = await navigator.serviceWorker.register('./service-worker.js', {
         scope: './',
         updateViaCache: 'none'
       });
-      if (registration.waiting) showUpdate(registration.waiting);
+
+      if (registration.waiting) activateUpdate(registration.waiting);
       registration.addEventListener('updatefound', () => {
         const worker = registration.installing;
         worker?.addEventListener('statechange', () => {
-          if (worker.state === 'installed' && navigator.serviceWorker.controller) showUpdate(worker);
+          if (worker.state === 'installed' && navigator.serviceWorker.controller) activateUpdate(worker);
         });
       });
-      if (!waitingWorker && !deferredPrompt) {
+
+      await checkForUpdate();
+      clearInterval(updateTimer);
+      updateTimer = window.setInterval(checkForUpdate, 5 * 60 * 1000);
+
+      if (!deferredPrompt && !refreshing) {
         setStatus(isStandalone() ? 'Programma görnüşinde açyk' : 'Offline režim taýýar');
       }
     } catch (error) {
