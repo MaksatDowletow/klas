@@ -222,12 +222,21 @@ function toggleMobileSearch(force){
   }
 }
 
+function syncPageNavigationState(name){
+  $$('[data-page]').forEach(element => {
+    const active = element.dataset.page === name;
+    element.classList.toggle('active', active);
+    if(active) element.setAttribute('aria-current', 'page');
+    else element.removeAttribute('aria-current');
+  });
+}
+
 function showPage(requestedName, updateHash=true){
   const normalizedName = appRuntime?.normalizePage(requestedName) || requestedName;
   const name = PAGE_NAMES.has(normalizedName) && $(`#page-${normalizedName}`) ? normalizedName : 'feed';
-  $$('.page').forEach(el=>el.classList.remove('active'));
-  $(`#page-${name}`)?.classList.add('active');
-  $$('[data-page]').forEach(el=>el.classList.toggle('active',el.dataset.page===name));
+  const current = activePageName();
+  $$('.page').forEach(el=>el.classList.toggle('active', el.id === `page-${name}`));
+  syncPageNavigationState(name);
   $('#sidebar').classList.remove('open');
   $('#menuBtn').setAttribute('aria-expanded','false');
   setMobileChatOpen(false);
@@ -236,11 +245,16 @@ function showPage(requestedName, updateHash=true){
   $('#searchInput').setAttribute('aria-expanded','false');
   if(updateHash && location.hash !== `#${name}`){
     history.pushState({page:name},'',`${location.pathname}${location.search}#${name}`);
+  } else if(!location.hash){
+    history.replaceState({page:name},'',`${location.pathname}${location.search}#${name}`);
   }
   schedulePageRender(name);
   if(appRuntime) appRuntime.emit(appRuntime.EVENTS.pageChange, { page:name });
   else window.dispatchEvent(new CustomEvent('klas:pagechange',{detail:{page:name}}));
-  window.scrollTo({top:0,behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth'});
+  if(current !== name){
+    window.scrollTo({top:0,behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth'});
+    requestAnimationFrame(() => $(`#page-${name} h1, #page-${name} [tabindex="-1"]`)?.focus({preventScroll:true}));
+  }
 }
 function routeFromHash(){ showPage(appRuntime?.pageFromHash(location.hash) || (location.hash||'#feed').slice(1),false); }
 
@@ -280,7 +294,8 @@ function openLightbox(html){
 function closeLightbox(){
   const lightbox = $('#lightbox');
   if(!lightbox.classList.contains('open')) return;
-  lightbox.classList.remove('open'); lightbox.setAttribute('aria-hidden','true');
+  lightbox.classList.remove('open');
+  lightbox.setAttribute('aria-hidden','true');
   $('#lightboxContent').innerHTML='';
   updateOverlayState();
   lightboxReturnFocus?.focus?.();
