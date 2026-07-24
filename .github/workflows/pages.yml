@@ -1,9 +1,10 @@
-name: Deploy Klas Dynamic App to GitHub Pages
+name: Validate and Deploy Klas
 
 on:
+  pull_request:
+    branches: [main]
   push:
-    branches:
-      - main
+    branches: [main]
   workflow_dispatch:
 
 permissions:
@@ -12,214 +13,57 @@ permissions:
   id-token: write
 
 concurrency:
-  group: pages
+  group: pages-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
-  deploy:
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
+  validate:
+    name: Validate release and build artifact
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Validate dynamic runtime
+      - name: Use Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install locked dependencies
+        run: npm ci
+
+      - name: Validate JavaScript syntax
         shell: bash
         run: |
           set -euo pipefail
-          required=(
-            index.html
-            klas-v4.css
-            klas-backend.css
-            klas-livechat.css
-            klas-design-system.css
-            klas-media-viewer.css
-            klas-runtime.js
-            klas-media-viewer.js
-            klas-v4-1.js
-            klas-v4-2.js
-            klas-v4-3.js
-            klas-v4-4.js
-            klas-bridge.js
-            klas-config.js
-            klas-backend-bootstrap.js
-            klas-auth-policy.js
-            klas-presence-policy.js
-            klas-contact-sync.js
-            klas-backend-core.js
-            klas-backend-ui.js
-            klas-backend-chat.js
-            klas-backend-community.js
-            klas-backend-notifications.js
-            klas-backend-video.js
-            klas-backend-realtime.js
-            klas-pwa.js
-            service-worker.js
-            manifest.webmanifest
-            offline.html
-            privacy.html
-            assets/icons/klas-icon.svg
-            assets/icons/klas-maskable.svg
-            assets/icons/klas-180.png
-            assets/icons/klas-192.png
-            assets/icons/klas-512.png
-            assets/icons/klas-maskable-192.png
-            assets/icons/klas-maskable-512.png
-            404.html
-            health.json
-            tests/runtime.test.js
-            tests/contracts.test.js
-            tests/media-viewer.test.js
-            tests/auth-policy.test.js
-            tests/presence-policy.test.js
-            tests/contact-sync.test.js
-          )
-          for file in "${required[@]}"; do
-            test -s "$file" || { echo "Missing required runtime file: $file"; exit 1; }
+          for file in klas-*.js service-worker.js scripts/*.js; do
+            node --check "$file"
           done
-          grep -q "klas-backend-bootstrap.js" index.html
-          grep -q "klas-backend-realtime.js" klas-backend-bootstrap.js
-          for file in klas-*.js; do node --check "$file"; done
-          node --check service-worker.js
-          node --test tests/*.test.js
-          jq empty manifest.webmanifest health.json
-          grep -q 'rel="manifest" href="./manifest.webmanifest"' index.html
-          grep -q 'viewport-fit=cover' index.html
-          grep -q 'id="mobileSearchBtn"' index.html
-          grep -q 'id="mobileChatBack"' index.html
-          grep -q 'id="accountActionBtn"' index.html
-          grep -q 'Google bilen giriş ýa-da akkaunt döretmek' index.html
-          grep -q 'signInWithPopup' klas-backend-core.js
-          ! grep -q 'signInWithRedirect' klas-backend-core.js
-          grep -q 'authBootstrap.wait(credential.user.uid)' klas-backend-core.js
-          grep -q 'const userSnapshot = await getDoc(userRef)' klas-backend-core.js
-          grep -q 'const profileSnapshot = await getDoc(profileRef)' klas-backend-core.js
-          ! grep -q 'Promise.all(\[getDoc(userRef), getDoc(profileRef)\])' klas-backend-core.js
-          grep -q "account.status === 'pending'" klas-auth-policy.js
-          grep -q "'klas/account-blocked'" klas-auth-policy.js
-          grep -q 'Gizlinlik we jemgyýet düzgünleri' privacy.html
-          grep -q "sign_in_provider == 'google.com'" firestore.rules
-          grep -q 'function isActiveMember()' firestore.rules
-          grep -q 'function isActiveAccount(uid)' firestore.rules
-          grep -q 'function canReadOwnProfile(uid)' firestore.rules
-          grep -Fq 'const id = `direct_' klas-backend-chat.js
-          grep -Fq '[data-message-person],[data-online-chat],[data-search-person],[data-chat-choice]' klas-backend-ui.js
-          grep -q 'allow get: if isActiveMember()' firestore.rules
-          grep -Fq "collection(db, 'presenceSessions')" klas-backend-core.js
-          grep -q 'presenceConfig.heartbeatMs' klas-backend-core.js
-          grep -q 'presenceConfig.staleMs' klas-backend-core.js
-          grep -q 'presencePolicy.aggregate' klas-backend-core.js
-          grep -q 'class="presence-badge"' klas-v4-2.js
-          grep -q 'match /presenceSessions/{sessionId}' firestore.rules
-          grep -q '@media(max-width:760px)' klas-v4.css
-          grep -q '"start_url": "/klas/' manifest.webmanifest
-          grep -q '"scope": "/klas/"' manifest.webmanifest
-          grep -q 'https://maksatdowletow.github.io/klas/' index.html
-          ! grep -q 'github.io/Klas/' index.html
-          grep -q "version: '6.2.0'" klas-config.js
-          grep -q 'klas-runtime.js' service-worker.js
-          grep -q 'klas-presence-policy.js' service-worker.js
-          grep -q 'klas-design-system.css' service-worker.js
-          grep -q 'klas-media-viewer.js' service-worker.js
-          grep -q 'klas-media-viewer.css' service-worker.js
-          grep -q 'klas-contact-sync.js' service-worker.js
-          grep -q 'id="contactPickerBtn"' index.html
-          grep -q 'id="contactVcfInput"' index.html
 
-      - name: Build clean Pages artifact
-        shell: bash
-        run: |
-          set -euo pipefail
-          rm -rf _site
-          mkdir -p _site
-          runtime=(
-            index.html
-            404.html
-            health.json
-            klas-v4.css
-            klas-backend.css
-            klas-livechat.css
-            klas-design-system.css
-            klas-media-viewer.css
-            klas-config.js
-            klas-runtime.js
-            klas-auth-policy.js
-            klas-presence-policy.js
-            klas-contact-sync.js
-            klas-media-viewer.js
-            klas-v4-1.js
-            klas-v4-2.js
-            klas-v4-3.js
-            klas-v4-4.js
-            klas-bridge.js
-            klas-backend-bootstrap.js
-            klas-backend-core.js
-            klas-backend-ui.js
-            klas-backend-chat.js
-            klas-backend-community.js
-            klas-backend-notifications.js
-            klas-backend-video.js
-            klas-backend-realtime.js
-            klas-pwa.js
-            service-worker.js
-            manifest.webmanifest
-            offline.html
-            privacy.html
-          )
-          cp "${runtime[@]}" _site/
-          mkdir -p _site/assets/icons
-          cp \
-            assets/icons/klas-icon.svg \
-            assets/icons/klas-maskable.svg \
-            assets/icons/klas-180.png \
-            assets/icons/klas-192.png \
-            assets/icons/klas-512.png \
-            assets/icons/klas-maskable-192.png \
-            assets/icons/klas-maskable-512.png \
-            _site/assets/icons/
-          touch _site/.nojekyll
-          cat > _site/release.json <<EOF
-          {
-            "app": "Klas",
-            "version": "6.2.0",
-            "commit": "${GITHUB_SHA}",
-            "dynamicPages": true,
-            "realtimeComments": true,
-            "runtimeKernel": true,
-            "versionedLocalStore": true,
-            "clientErrorBoundary": true,
-            "raceSafeGoogleAuth": true,
-            "firstLoginProvisioning": true,
-            "atomicOnboarding": true,
-            "firestoreDirectChat": true,
-            "unifiedChatEntrypoints": true,
-            "sessionScopedPresence": true,
-            "realtimeOnlineMembers": true,
-            "presenceHeartbeatExpiry": true,
-            "deviceContactPicker": true,
-            "vCardContactImport": true,
-            "localContactMatching": true,
-            "mediaGalleryViewer": true,
-            "centralizedCloudinaryConfig": true,
-            "pwa": true,
-            "offlineShell": true
-          }
-          EOF
-          test -s _site/index.html
-          test -s _site/klas-backend-realtime.js
-          test -s _site/manifest.webmanifest
-          test -s _site/service-worker.js
-          test -s _site/assets/icons/klas-maskable-512.png
+      - name: Run runtime contract tests
+        run: npm test
 
-      - name: Configure GitHub Pages
-        uses: actions/configure-pages@v5
+      - name: Audit release and build Pages artifact
+        run: npm run build:pages
 
-      - name: Upload static site artifact
+      - name: Upload Pages artifact
+        if: github.event_name != 'pull_request'
         uses: actions/upload-pages-artifact@v4
         with:
           path: _site
+
+  deploy:
+    name: Deploy verified release
+    if: github.event_name != 'pull_request'
+    needs: validate
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Configure GitHub Pages
+        uses: actions/configure-pages@v5
 
       - name: Deploy to GitHub Pages
         id: deployment
