@@ -1,6 +1,6 @@
 'use strict';
 
-const CACHE_VERSION = 'klas-shell-v6.2.0';
+const CACHE_VERSION = 'klas-shell-v6.2.1';
 const APP_BASE = new URL('./', self.registration.scope);
 const appUrl = path => new URL(path, APP_BASE).href;
 const APP_SHELL = [
@@ -64,7 +64,7 @@ self.addEventListener('message', event => {
 async function networkFirstNavigation(request){
   const cache = await caches.open(CACHE_VERSION);
   try {
-    const response = await fetch(request);
+    const response = await fetch(request, { cache: 'no-store' });
     if (response.ok) await cache.put(appUrl('./index.html'), response.clone());
     return response;
   } catch {
@@ -74,16 +74,25 @@ async function networkFirstNavigation(request){
   }
 }
 
-async function cacheFirstStatic(request){
+async function staleWhileRevalidateStatic(request, event){
   const cache = await caches.open(CACHE_VERSION);
-  const cached = await cache.match(request, { ignoreSearch: true });
-  if (cached) return cached;
-  const response = await fetch(request);
-  if (response.ok && response.type === 'basic') {
-    const url = new URL(request.url);
-    await cache.put(`${url.origin}${url.pathname}`, response.clone());
+  const cacheKey = `${new URL(request.url).origin}${new URL(request.url).pathname}`;
+  const cached = await cache.match(cacheKey);
+  const network = fetch(request, { cache: 'no-store' }).then(async response => {
+    if (response.ok && response.type === 'basic') await cache.put(cacheKey, response.clone());
+    return response;
+  });
+
+  if (cached) {
+    event.waitUntil(network.catch(() => undefined));
+    return cached;
   }
-  return response;
+
+  try {
+    return await network;
+  } catch {
+    return Response.error();
+  }
 }
 
 self.addEventListener('fetch', event => {
@@ -95,5 +104,5 @@ self.addEventListener('fetch', event => {
     event.respondWith(networkFirstNavigation(request));
     return;
   }
-  event.respondWith(cacheFirstStatic(request));
+  event.respondWith(staleWhileRevalidateStatic(request, event));
 });
