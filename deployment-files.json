@@ -15,6 +15,8 @@
     "klas-contact-sync.js",
     "klas-media-viewer.js",
     "klas-school-groups-policy.mjs",
+    "klas-registration-groups-policy.mjs",
+    "klas-registration-groups.js",
     "klas-v4-1.js",
     "klas-v4-2.js",
     "klas-v4-3.js",
