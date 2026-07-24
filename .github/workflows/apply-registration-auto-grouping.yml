@@ -1,0 +1,41 @@
+name: Apply registration auto-grouping
+
+on:
+  push:
+    branches:
+      - feat/registration-auto-grouping
+
+permissions:
+  contents: write
+
+jobs:
+  migrate:
+    if: ${{ !contains(github.event.head_commit.message, '[auto-grouping-applied]') }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feat/registration-auto-grouping
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Apply source migration
+        run: |
+          node scripts/apply-registration-auto-grouping.mjs
+          node scripts/finalize-registration-auto-grouping.mjs
+      - name: Validate migrated source
+        run: |
+          node --check klas-auth-policy.js
+          node --check klas-backend-core.js
+          node --check klas-backend-ui.js
+          node --check service-worker.js
+          node --test tests/*.test.js tests/*.test.mjs
+          jq empty health.json
+      - name: Commit generated implementation
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add klas-auth-policy.js klas-backend-core.js klas-backend-ui.js firestore.rules service-worker.js health.json tests/registration-auto-grouping.test.js
+          git commit -m "Implement registration-based automatic groups [auto-grouping-applied]"
+          git push origin HEAD:feat/registration-auto-grouping
