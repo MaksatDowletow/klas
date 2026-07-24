@@ -28,16 +28,17 @@ test('HTML IDs remain unique', () => {
   assert.deepEqual([...new Set(duplicates)], []);
 });
 
-test('release and offline shell versions stay aligned', () => {
+test('release metadata and offline shell versions stay declared', () => {
   const runtime = require('../klas-runtime.js');
   const config = read('klas-config.js');
   const health = JSON.parse(read('health.json'));
   const serviceWorker = read('service-worker.js');
   const deployment = read('DEPLOYMENT_VERSION');
   assert.match(config, new RegExp(`version: '${health.version.replaceAll('.', '\\.')}'`));
-  assert.match(serviceWorker, new RegExp(`klas-shell-v${health.version.replaceAll('.', '\\.')}`));
+  assert.match(serviceWorker, new RegExp(`klas-shell-v${health.cacheVersion.replaceAll('.', '\\.')}`));
   assert.match(deployment, new RegExp(`Klas v${health.version.replaceAll('.', '\\.')}`));
   assert.equal(runtime.APP_VERSION, health.version);
+  assert.match(health.cacheVersion, /^\d+\.\d+\.\d+$/);
 });
 
 test('authentication remains Google popup only', () => {
