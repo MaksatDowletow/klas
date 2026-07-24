@@ -159,6 +159,192 @@ body {
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--danger) 14%, transparent);
 }
 
+.contact-sync-row {
+  align-items: flex-start;
+}
+
+.contact-sync-actions {
+  align-items: center;
+  display: flex;
+  flex: 0 0 auto !important;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  justify-content: flex-end;
+}
+
+.contact-sync-actions .file-label {
+  white-space: nowrap;
+}
+
+.contact-privacy-note,
+.contact-login-note {
+  align-items: flex-start;
+  background: color-mix(in srgb, var(--success) 9%, var(--card));
+  border: 1px solid color-mix(in srgb, var(--success) 25%, var(--line));
+  border-radius: var(--radius-md);
+  display: flex;
+  gap: var(--space-3);
+  padding: var(--space-4);
+}
+
+.contact-privacy-note > span {
+  font-size: 1.25rem;
+}
+
+.contact-privacy-note b,
+.contact-privacy-note small,
+.contact-login-note b,
+.contact-login-note span {
+  display: block;
+}
+
+.contact-privacy-note small,
+.contact-login-note span {
+  color: var(--muted);
+  margin-top: var(--space-1);
+}
+
+.contact-login-note {
+  background: color-mix(in srgb, var(--brand) 8%, var(--card));
+  border-color: color-mix(in srgb, var(--brand) 24%, var(--line));
+  display: block;
+  margin-top: var(--space-4);
+}
+
+.contact-stats {
+  display: grid;
+  gap: var(--space-2);
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin-top: var(--space-4);
+}
+
+.contact-stats > div {
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  display: grid;
+  padding: var(--space-3);
+  text-align: center;
+}
+
+.contact-stats strong {
+  color: var(--brand);
+  font-size: 1.35rem;
+}
+
+.contact-stats span,
+.contact-section-help,
+.contact-overflow-note {
+  color: var(--muted);
+  font-size: .75rem;
+}
+
+.contact-result-section {
+  margin-top: var(--space-5);
+}
+
+.contact-section-title {
+  align-items: center;
+  display: flex;
+  justify-content: space-between;
+}
+
+.contact-section-title > span {
+  background: var(--soft);
+  border-radius: 999px;
+  color: var(--brand);
+  font-size: .75rem;
+  font-weight: 800;
+  padding: .2rem .55rem;
+}
+
+.contact-section-help {
+  margin: var(--space-1) 0 var(--space-2);
+}
+
+.contact-result-list {
+  display: grid;
+  gap: var(--space-2);
+  margin-top: var(--space-2);
+}
+
+.contact-result-item {
+  align-items: center;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  display: flex;
+  gap: var(--space-3);
+  min-width: 0;
+  padding: var(--space-3);
+  text-align: left;
+  width: 100%;
+}
+
+.contact-result-item > span:nth-child(2) {
+  flex: 1;
+  min-width: 0;
+}
+
+.contact-result-item b,
+.contact-result-item small {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.contact-result-item small {
+  color: var(--muted);
+}
+
+.contact-match:hover {
+  background: var(--soft);
+  border-color: color-mix(in srgb, var(--brand) 34%, var(--line));
+}
+
+.contact-result-icon {
+  background: var(--soft);
+  border-radius: .7rem;
+  color: var(--brand);
+  display: grid;
+  flex: 0 0 2.25rem !important;
+  font-size: 1.15rem;
+  font-weight: 900;
+  height: 2.25rem;
+  place-items: center;
+}
+
+.contact-result-action {
+  color: var(--brand);
+  flex: 0 0 auto !important;
+  font-size: .8rem;
+  font-weight: 800;
+}
+
+.contact-empty {
+  margin-top: var(--space-4);
+}
+
+.contact-overflow-note {
+  display: block;
+  margin-top: var(--space-2);
+  text-align: center;
+}
+
+.contact-result-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  justify-content: space-between;
+  margin-top: var(--space-5);
+}
+
+.contact-forget {
+  color: var(--danger);
+}
+
 @media (max-width: 860px) {
   .layout {
     padding-top: var(--space-4);
@@ -177,6 +363,35 @@ body {
 
   .app-error-banner p {
     font-size: .875rem;
+  }
+
+  .contact-sync-actions {
+    flex: 1 1 100% !important;
+    justify-content: stretch;
+  }
+
+  .contact-sync-actions > * {
+    flex: 1 1 8rem;
+    text-align: center;
+  }
+
+  .contact-result-item {
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .contact-result-item > span:nth-child(2) {
+    padding-top: .15rem;
+  }
+
+  .contact-result-item > .mini,
+  .contact-result-action {
+    flex: 1 1 100% !important;
+    margin-left: 3rem;
+  }
+
+  .contact-result-controls > * {
+    flex: 1 1 100%;
   }
 }
 

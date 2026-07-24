@@ -47,6 +47,7 @@ jobs:
             klas-backend-bootstrap.js
             klas-auth-policy.js
             klas-presence-policy.js
+            klas-contact-sync.js
             klas-backend-core.js
             klas-backend-ui.js
             klas-backend-chat.js
@@ -73,6 +74,7 @@ jobs:
             tests/media-viewer.test.js
             tests/auth-policy.test.js
             tests/presence-policy.test.js
+            tests/contact-sync.test.js
           )
           for file in "${required[@]}"; do
             test -s "$file" || { echo "Missing required runtime file: $file"; exit 1; }
@@ -116,12 +118,15 @@ jobs:
           grep -q '"scope": "/klas/"' manifest.webmanifest
           grep -q 'https://maksatdowletow.github.io/klas/' index.html
           ! grep -q 'github.io/Klas/' index.html
-          grep -q "version: '6.1.0'" klas-config.js
+          grep -q "version: '6.2.0'" klas-config.js
           grep -q 'klas-runtime.js' service-worker.js
           grep -q 'klas-presence-policy.js' service-worker.js
           grep -q 'klas-design-system.css' service-worker.js
           grep -q 'klas-media-viewer.js' service-worker.js
           grep -q 'klas-media-viewer.css' service-worker.js
+          grep -q 'klas-contact-sync.js' service-worker.js
+          grep -q 'id="contactPickerBtn"' index.html
+          grep -q 'id="contactVcfInput"' index.html
 
       - name: Build clean Pages artifact
         shell: bash
@@ -142,6 +147,7 @@ jobs:
             klas-runtime.js
             klas-auth-policy.js
             klas-presence-policy.js
+            klas-contact-sync.js
             klas-media-viewer.js
             klas-v4-1.js
             klas-v4-2.js
@@ -177,7 +183,7 @@ jobs:
           cat > _site/release.json <<EOF
           {
             "app": "Klas",
-            "version": "6.1.0",
+            "version": "6.2.0",
             "commit": "${GITHUB_SHA}",
             "dynamicPages": true,
             "realtimeComments": true,
@@ -192,6 +198,9 @@ jobs:
             "sessionScopedPresence": true,
             "realtimeOnlineMembers": true,
             "presenceHeartbeatExpiry": true,
+            "deviceContactPicker": true,
+            "vCardContactImport": true,
+            "localContactMatching": true,
             "mediaGalleryViewer": true,
             "centralizedCloudinaryConfig": true,
             "pwa": true,

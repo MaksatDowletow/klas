@@ -11,6 +11,7 @@ Esasy runtime faýllary:
 - `index.html`
 - `klas-runtime.js`
 - `klas-presence-policy.js`
+- `klas-contact-sync.js`
 - `klas-design-system.css`
 - `klas-media-viewer.js`
 - `klas-media-viewer.css`
@@ -37,6 +38,8 @@ Cloudinary `fitojlfl / klas_unsigned` merkezi production konfigurasiýasydyr. Ul
 Firestore 1:1 çaty ähli production giriş nokatlarynda — synpdaş, onlaýn avatar, global gözleg we **Täze çat** modal — şol bir deterministik dialogy açýar. Täze dialog diňe iki işjeň, onboarding-i tamamlanan agzanyň arasynda döredilýär; habarlary, typing ýagdaýyny we `Görüldi` belgisini diňe şol iki gatnaşyjy okap/ýazyp bilýär.
 
 Online ýagdaý profil baýdagyndan aýratyn `presenceSessions/{sessionId}` realtime sessiýalary arkaly hasaplanýar. Her brauzer tab-y öz heartbeat-ini berýär; başga tab-yň ýapylmagy işjeň sessiýany öçürmeýär. Logout/pagehide ýagdaýy derrew `offline` ýazýar, duýdansyz ýapylan ýa-da interneti kesilen sessiýa bolsa 105 sekuntdan soň UI-da awtomatik könelýär. Synpdaşlar, global gözleg, sag panel we çat sözbaşysy şol bir realtime çeşmäni ulanýar.
+
+Kontakt sinhronizasiýasy Android Chromium/PWA-da Contact Picker API arkaly, beýleki brauzerlerde `.vcf` import arkaly işleýär. Ulanyjy her gezek kontaktlary özi saýlaýar. `klas-contact-sync.js` VCF maglumatyny lokally parse edýär, Turkmen atlaryny normalizasiýa edýär we diňe bir ýeke-täk doly at gabat gelen ýagdaýynda işjeň Klas profilini görkezýär. Telefon/e-poçta maglumatlary tora ugradylmaýar ýa-da persistent storage-da saklanmaýar; diňe sanlar we soňky barlag wagty saklanýar.
 
 Arhitektura serhedi we howpsuzlyk düzgünleri `ARCHITECTURE.md` faýlynda. Lokal regression testleri:
 

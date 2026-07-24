@@ -35,7 +35,7 @@ window.KLAS_CONFIG = Object.freeze({
     maxSessions: 500
   }),
   app: Object.freeze({
-    version: '6.1.0',
+    version: '6.2.0',
     firebaseSdkVersion: '12.16.0',
     allowLocalFallback: true,
     dynamicPages: true,

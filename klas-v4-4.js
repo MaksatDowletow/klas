@@ -15,6 +15,7 @@ function renderEverything(){
   renderNextEvent();
   renderNotifications();
   renderProfile();
+  renderContactSyncStatus();
 }
 
 $$('[data-page]').forEach(b=>b.onclick=()=>showPage(b.dataset.page));
@@ -38,6 +39,9 @@ $$('[data-media-filter]').forEach(b=>b.onclick=()=>{state.mediaFilter=b.dataset.
 $('#createEventBtn').onclick=openEventComposer;
 $('#readAll').onclick=()=>{state.notifications.forEach(n=>n.read=true);save();renderNotifications();toast('Ähli bildirişler okalan edildi')};
 $('#editProfileBtn').onclick=openProfileEditor;
+$('#contactPickerBtn').onclick=selectDeviceContacts;
+$('#contactVcfInput').onchange=e=>importContactVcf(e.target.files[0]);
+$('#contactSyncResultsBtn').onclick=openContactSyncResults;
 $('#exportBtn').onclick=exportData;
 $('#importInput').onchange=e=>importData(e.target.files[0]);
 $('#resetBtn').onclick=()=>{if(confirm('Ähli ýerli maglumatlar arassalanyp, programma başlangyç ýagdaýa getirilsinmi?')){state=clone(defaultState);save();renderEverything();showPage('feed');toast('Maglumatlar arassalandy')}};
